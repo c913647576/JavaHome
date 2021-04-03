@@ -1,17 +1,25 @@
 ### JVM 篇
 1. 什么情况下会发生栈内存溢出。什么时候发生堆溢出？你是怎么排错的？
- 
-> 栈是线程私有的，他的生命周期与线程相同，每个方法在执行的时候都会创建一个栈帧，用来存储局部变量表，操作数栈，动态链接，方法出口等信息。局部变量表又包含基本数据类型，对象引用类型（局部变量表编译器完成，运行期间不会变化）。所以我们可以理解为栈溢出就是方法执行是创建的栈帧请求的深度超过了栈能给予的最大深度。最有可能的就是：递归方法调用产生这种结果。
+----------
+栈是线程私有的，他的生命周期与线程相同，每个方法在执行的时候都会创建一个栈帧，用来存储局部变量表，操作数栈，动态链接，方法出口等信息。局部变量表又包含基本数据类型，对象引用类型（局部变量表编译器完成，运行期间不会变化）。所以我们可以理解为栈溢出就是方法执行是创建的栈帧请求的深度超过了栈能给予的最大深度。最有可能的就是：递归方法调用产生这种结果。
+
 ![](https://img-blog.csdnimg.cn/20200801195942598.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2ZyaXN0amNqZG5jZw==,size_16,color_FFFFFF,t_70)
+
 解决：我们需要使用参数 -Xss 去调整JVM栈的大小
+
 ![](https://img-blog.csdnimg.cn/20200801200243402.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2ZyaXN0amNqZG5jZw==,size_16,color_FFFFFF,t_70)
+
 堆内存溢出
+
 ![](https://img-blog.csdnimg.cn/20200801200416915.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2ZyaXN0amNqZG5jZw==,size_16,color_FFFFFF,t_70)
+
 对象被循环引用会导致堆内存溢出，在for循环里不断创建对象也会导致堆内存溢出，这种由于代码书写不当导致的内存溢出也叫内存泄漏，正常情况下大量的业务数据也会导致内存溢出，这种情况可以通过 -Xmx4096M 调整堆的总大小来解决。
+
 永久代溢出(OutOfMemoryError: PermGen space)
 由于JDK7、8移除永久带，所以上述代码在JDK1.6的情况中会出现永久带溢出的现象。
 
 2. JVM怎么判断对象是可回收对象？有哪些方法。
+----------
 3. JVM的内存结构，新生代与老年代的比例，Eden和Survivor比例。
 4. 你知道哪几种垃圾收集器，各自的优缺点，重点讲下cms和G1，包括原理，流程，优缺点。
 5. 简单说说你了解的类加载器，可以打破双亲委派么，怎么打破。
