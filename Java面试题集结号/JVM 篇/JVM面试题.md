@@ -1,52 +1,63 @@
-### JVM ƪ
-1. ʲô����»ᷢ��ջ�ڴ������ʲôʱ�����������������ô�Ŵ��ģ�
-2. JVM��ô�ж϶����ǿɻ��ն�������Щ������
-3. JVM���ڴ�ṹ����������������ı�����Eden��Survivor������
-4. ��֪���ļ��������ռ��������Ե���ȱ�㣬�ص㽲��cms��G1������ԭ�������̣���ȱ�㡣
-5. ��˵˵���˽��������������Դ���˫��ί��ô����ô���ơ�
-6. JVM�ڴ�ΪʲôҪ�ֳ�����������������־ô�����������ΪʲôҪ��ΪEden��Survivor��
-7. JVM ���� fullGC ��Ƶ������ôȥ�����Ų����⣿
-8. JVM��һ��������GC�����������ģ�������ν������������˵˵��֪���ļ�����Ҫ��JVM������
-9. ���������㷨��ʵ��ԭ����
-10. JVM�ڴ�ģ�͵����֪ʶ�˽���٣������������ڴ����ϣ�happen-before�����ڴ棬�����ڴ�ȡ�
-11. ˵һ��Java����Ĵ�������
-12. ��������Ӧ�õ�JVM������������Щ��
-13. G1��cms����
-14. ��ô����߳�ջ��Ϣ��
-15. ˵һ������ص�ִ�й���
-16. JVM�������ջ��ƣ���ʱ����MinorGC�Ȳ����أ�
-17. ZGC �����ռ������˽����
-18. ����ķ��ʶ�λ�������ַ�ʽ?
-19. ˵һ�� jvm ���ŵĹ��ߣ�
-20. ����ʲôʱ�������������
-21. �ڴ�й©���ڴ��������
-22. ʲô��tomcat����ػ��ƣ�
-23. �˽����ݷ���������
-24. ����System.gc()�ᷢ��ʲô?
-25. ̸̸Minor GC������full GC����
-26. Stop The World �˽����
-27. ̸̸����ʶ������OOM����α���OOM?
-28. �˽��JVM����û������˼·��ʲô?���ȷ�����ǵĴ�С�أ�
-29. �Ա�������Ʒ��Ϣ��JVM�ĸ��ڴ�����
-30. �ֽ���ı������
-31. Java��Ҫ������Ա�����ڴ�������
-32. Java������������ʲôĿ�ģ�ʲôʱ������������գ�
-33. System.gc()��Runtime.gc()����ʲô���飿
-34. ���ڴ��빤���ڴ�
-35. �ڴ�佻������
-36. volatile ��ֹ�ڴ�������
-37. �ڴ�ģ����������
-38. ̸̸���з���ԭ��
-39.  JVM ���ڴ�����������߳��Ƿ�ɼ���������
-40.  ˵һ��JVM ���ò�������Щ��
-41.  VM Ϊʲôʹ��Ԫ�ռ��滻�����ô���
-42.  Java�ѵĽṹ��ʲô���ӵģ�ʲô�Ƕ��е����ô�(Perm Gen space)?
-43.  JVM�����ô��лᷢ����������ô��
-44.  ʲô���ֽ��룿�����ֽ�������ô���ʲô��ʲôJava���������
-45.  MinorGC �Ĺ���
-46.  CPU ռ�ù�����η���
-47.  Serial��Parallel GC֮��Ĳ�֮ͬ����
-48.  WeakHashMap ����ô�����ģ�
-49.  ���� Java �ѿռ估 GC��
-50.  ���ܱ�֤ GC ִ����
-51.  JVM���ĸ����������������̵߳�ջ��ջС��?
+### JVM 篇
+1. 什么情况下会发生栈内存溢出。什么时候发生堆溢出？你是怎么排错的？
+ 
+> 栈是线程私有的，他的生命周期与线程相同，每个方法在执行的时候都会创建一个栈帧，用来存储局部变量表，操作数栈，动态链接，方法出口等信息。局部变量表又包含基本数据类型，对象引用类型（局部变量表编译器完成，运行期间不会变化）。所以我们可以理解为栈溢出就是方法执行是创建的栈帧请求的深度超过了栈能给予的最大深度。最有可能的就是：递归方法调用产生这种结果。
+![](https://img-blog.csdnimg.cn/20200801195942598.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2ZyaXN0amNqZG5jZw==,size_16,color_FFFFFF,t_70)
+解决：我们需要使用参数 -Xss 去调整JVM栈的大小
+![](https://img-blog.csdnimg.cn/20200801200243402.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2ZyaXN0amNqZG5jZw==,size_16,color_FFFFFF,t_70)
+堆内存溢出
+![](https://img-blog.csdnimg.cn/20200801200416915.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2ZyaXN0amNqZG5jZw==,size_16,color_FFFFFF,t_70)
+对象被循环引用会导致堆内存溢出，在for循环里不断创建对象也会导致堆内存溢出，这种由于代码书写不当导致的内存溢出也叫内存泄漏，正常情况下大量的业务数据也会导致内存溢出，这种情况可以通过 -Xmx4096M 调整堆的总大小来解决。
+永久代溢出(OutOfMemoryError: PermGen space)
+由于JDK7、8移除永久带，所以上述代码在JDK1.6的情况中会出现永久带溢出的现象。
+
+2. JVM怎么判断对象是可回收对象？有哪些方法。
+3. JVM的内存结构，新生代与老年代的比例，Eden和Survivor比例。
+4. 你知道哪几种垃圾收集器，各自的优缺点，重点讲下cms和G1，包括原理，流程，优缺点。
+5. 简单说说你了解的类加载器，可以打破双亲委派么，怎么打破。
+6. JVM内存为什么要分成新生代，老年代，持久代。新生代中为什么要分为Eden和Survivor。
+7. JVM 出现 fullGC 很频繁，怎么去线上排查问题？
+8. JVM中一次完整的GC流程是怎样的，对象如何晋升到老年代，说说你知道的几种主要的JVM参数。
+9. 垃圾回收算法的实现原理。
+10. JVM内存模型的相关知识了解多少，比如重排序，内存屏障，happen-before，主内存，工作内存等。
+11. 说一下Java对象的创建过程
+12. 你们线上应用的JVM参数配置了哪些。
+13. G1和cms区别。
+14. 怎么打出线程栈信息。
+15. 说一下类加载的执行过程
+16. JVM垃圾回收机制，何时触发MinorGC等操作呢？
+17. ZGC 垃圾收集器，了解过吗
+18. 对象的访问定位有哪两种方式?
+19. 说一下 jvm 调优的工具？
+20. 对象什么时候会进入老年代？
+21. 内存泄漏和内存溢出区别？
+22. 什么是tomcat类加载机制？
+23. 了解逃逸分析技术吗
+24. 调用System.gc()会发生什么?
+25. 谈谈Minor GC条件，full GC条件
+26. Stop The World 了解过吗？
+27. 谈谈你认识多少种OOM？如何避免OOM?
+28. 了解过JVM调优没，基本思路是什么?如何确定它们的大小呢？
+29. 淘宝热门商品信息在JVM哪个内存区域
+30. 字节码的编译过程
+31. Java需要开发人员回收内存垃圾吗？
+32. Java中垃圾回收有什么目的？什么时候进行垃圾回收？
+33. System.gc()和Runtime.gc()会做什么事情？
+34. 主内存与工作内存
+35. 内存间交互操作
+36. volatile 禁止内存重排序
+37. 内存模型三大特性
+38. 谈谈先行发生原则
+39.  JVM 堆内存溢出后，其他线程是否可继续工作？
+40.  说一下JVM 常用参数有哪些？
+41.  VM 为什么使用元空间替换了永久代？
+42.  Java堆的结构是什么样子的？什么是堆中的永久代(Perm Gen space)?
+43.  JVM的永久代中会发生垃圾回收么？
+44.  什么是字节码？采用字节码的最大好处是什么？什么Java是虚拟机？
+45.  MinorGC 的过程
+46.  CPU 占用过高如何分析
+47.  Serial与Parallel GC之间的不同之处？
+48.  WeakHashMap 是怎么工作的？
+49.  解释 Java 堆空间及 GC？
+50.  你能保证 GC 执行吗？
+51.  JVM中哪个参数是用来控制线程的栈堆栈小的?
