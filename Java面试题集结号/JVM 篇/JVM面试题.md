@@ -1,29 +1,51 @@
-### JVM 篇
-1. 什么情况下会发生栈内存溢出。什么时候发生堆溢出？你是怎么排错的？
-----------
-栈是线程私有的，他的生命周期与线程相同，每个方法在执行的时候都会创建一个栈帧，用来存储局部变量表，操作数栈，动态链接，方法出口等信息。局部变量表又包含基本数据类型，对象引用类型（局部变量表编译器完成，运行期间不会变化）。所以我们可以理解为栈溢出就是方法执行是创建的栈帧请求的深度超过了栈能给予的最大深度。最有可能的就是：递归方法调用产生这种结果。
+### JVM 篇 ###
+#### 1. 什么情况下会发生栈内存溢出。什么时候发生堆溢出？你是怎么排错的？  ####
+- 栈内存溢出
 
-![](https://img-blog.csdnimg.cn/20200801195942598.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2ZyaXN0amNqZG5jZw==,size_16,color_FFFFFF,t_70)
+	栈是线程私有的，他的生命周期与线程相同，每个方法在执行的时候都会创建一个栈帧，用来存储局部变量表，操作数栈，动态链接，方法出口等信息。局部变量表又包含基本数据类型，对象引用类型（局部变量表编译器完成，运行期间不会变化）。所以我们可以理解为栈溢出就是方法执行是创建的栈帧请求的深度超过了栈能给予的最大深度。最有可能的就是：递归方法调用产生这种结果。
 
-解决：我们需要使用参数 -Xss 去调整JVM栈的大小
+	![](https://img-blog.csdnimg.cn/20200801195942598.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2ZyaXN0amNqZG5jZw==,size_16,color_FFFFFF,t_70)
 
-![](https://img-blog.csdnimg.cn/20200801200243402.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2ZyaXN0amNqZG5jZw==,size_16,color_FFFFFF,t_70)
+	解决：我们需要使用参数 -Xss 去调整JVM栈的大小
 
-堆内存溢出
+	![](https://img-blog.csdnimg.cn/20200801200243402.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2ZyaXN0amNqZG5jZw==,size_16,color_FFFFFF,t_70)
 
-![](https://img-blog.csdnimg.cn/20200801200416915.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2ZyaXN0amNqZG5jZw==,size_16,color_FFFFFF,t_70)
-（1）静态集合类，如HashMap、LinkedList等等。如果这些容器为静态的，那么它们的生命周期与程序一致，则容器中的对象在程序结束之前将不能被释放，从而造成内存泄漏。简单而言，长生命周期的对象持有短生命周期对象的引用，尽管短生命周期的对象不再使用，但是因为长生命周期对象持有它的引用而导致不能被回收。
-（2）数据库连接、网络连接和IO连接等。在对数据库进行操作的过程中，首先需要建立与数据库的连接，当不再使用时，需要调用close方法来释放与数据库的连接。只有连接被关闭后，垃圾回收器才会回收对应的对象。否则，如果在访问数据库的过程中，对Connection、Statement或ResultSet不显性地关闭，将会造成大量的对象无法被回收，从而引起内存泄漏。
-（3）变量不合理的作用域。一般而言，一个变量的定义的作用范围大于其使用范围，很有可能会造成内存泄漏。另一方面，如果没有及时地把对象设置为null，很有可能导致内存泄漏的发生。
-（4）对象被循环引用会导致堆内存溢出，在for循环里不断创建对象也会导致堆内存溢出，这种由于代码书写不当导致的内存溢出也叫内存泄漏，正常情况下大量的业务数据也会导致内存溢出，这种情况可以通过 -Xmx4096M 调整堆的总大小来解决，同时编写代码时也要注意存有大量数据的集合对象在使用完成后及时设置为null。
+- 堆内存溢出
 
-永久代溢出(OutOfMemoryError: PermGen space)
-由于JDK7、8移除永久带，所以上述代码在JDK1.6的情况中会出现永久带溢出的现象。
+	![](https://img-blog.csdnimg.cn/20200801200416915.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2ZyaXN0amNqZG5jZw==,size_16,color_FFFFFF,t_70)
+	（1）静态集合类，如HashMap、LinkedList等等。如果这些容器为静态的，那么它们的生命周期与程序一致，则容器中的对象在程序结束之前将不能被释放，从而造成内存泄漏。简单而言，长生命周期的对象持有短生命周期对象的引用，尽管短生命周期的对象不再使用，但是因为长生命周期对象持有它的引用而导致不能被回收。
 
-2. JVM怎么判断对象是可回收对象？有哪些方法。
-----------
+	（2）数据库连接、网络连接和IO连接等。在对数据库进行操作的过程中，首先需要建立与数据库的连接，当不再使用时，需要调用close方法来释放与数据库的连接。只有连接被关闭后，垃圾回收器才会回收对应的对象。否则，如果在访问数据库的过程中，对Connection、Statement或ResultSet不显性地关闭，将会造成大量的对象无法被回收，从而引起内存泄漏。
 
-3. JVM的内存结构，新生代与老年代的比例，Eden和Survivor比例。
+	（3）变量不合理的作用域。一般而言，一个变量的定义的作用范围大于其使用范围，很有可能会造成内存泄漏。另一方面，如果没有及时地把对象设置为null，很有可能导致内存泄漏的发生。
+
+	（4）对象被循环引用会导致堆内存溢出，在for循环里不断创建对象也会导致堆内存溢出，这种由于代码书写不当导致的内存溢出也叫内存泄漏，正常情况下大量的业务数据也会导致内存溢出，这种情况可以通过 -Xmx4096M 调整堆的总大小来解决，同时编写代码时也要注意存有大量数据的集合对象在使用完成后及时设置为null。
+
+- 永久代溢出(OutOfMemoryError: PermGen space)
+	由于JDK7、8移除永久带，所以上述代码在JDK1.6的情况中会出现永久带溢出的现象。
+
+#### 2. JVM怎么判断对象是可回收对象？有哪些方法。 ####
+
+
+- 引用计数法
+
+    给每一个对象添加一个引用计数器，当一个引用指向对象，计数器值加一，当一个引用失效，计数器减一，判断计数器是否为0，确定对象是否可用。
+
+- 可达性分析(Reachability Analysis) 
+
+    从GC Roots开始搜索，关联到的对象存活，没有关联到的可以回收。
+
+![](https://pic1.zhimg.com/80/v2-e980fa21a25bf85be0523f72d61d8d40_720w.jpg)
+
+哪些对象可以作为GC Roots(Garbage Collection Roots)？
+> 虚拟机栈中引用的对象
+> 
+> 方法区中类静态属性引用的对象
+> 
+> 方法区中常量引用的对象
+> 
+> 本地方法栈中JNI(native方法，调用C++代码)引用的对象
+#### 3. JVM的内存结构，新生代与老年代的比例，Eden和Survivor比例。
 4. 你知道哪几种垃圾收集器，各自的优缺点，重点讲下cms和G1，包括原理，流程，优缺点。
 5. 简单说说你了解的类加载器，可以打破双亲委派么，怎么打破。
 6. JVM内存为什么要分成新生代，老年代，持久代。新生代中为什么要分为Eden和Survivor。
@@ -71,4 +93,4 @@
 48.  WeakHashMap 是怎么工作的？
 49.  解释 Java 堆空间及 GC？
 50.  你能保证 GC 执行吗？
-51.  JVM中哪个参数是用来控制线程的栈堆栈小的?
+51.  JVM中哪个参数是用来控制线程的栈堆栈小的? ####
