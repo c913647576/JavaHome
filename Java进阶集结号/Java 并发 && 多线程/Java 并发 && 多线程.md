@@ -1,5 +1,8 @@
 ### Java 并发 && 多线程
 1. synchronized 的实现原理以及锁优化？
+
+> https://blog.csdn.net/jinjiniao1/article/details/91546512
+
 2. ThreadLocal原理，使用注意点，应用场景有哪些？
 3. synchronized和ReentrantLock的区别？
 4. 说说CountDownLatch与CyclicBarrier 区别
