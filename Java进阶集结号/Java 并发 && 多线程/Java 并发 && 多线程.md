@@ -364,8 +364,17 @@
 全：（1）对变量的写操作不依赖于当前值（比如 i++），或者说是单纯的变量赋值（boolean
 flag = true）。（2）该变量没有包含在具有其他变量的不变式中， 也就是说，不同的 volatile 变量之间，不能互相依赖。 只有在状态真正独立于程序内其他内容时才能使用 volatile。
 > 
-> 实现原理：主内存与工作内存的工作原理。
+> 实现原理：volatile的实现原理是在执行变量写操作后指令lock指令，这个指令会将变量实时写入内存而不是处理器的内存缓冲区，然后其他处理器通过缓存一致性协议嗅探到这个变量的变更，将该变量的缓存设为失效，从而实现内存可见性；
+> 
+>在JMM中，通过内存屏障实现具体如下：
 >
+- 在每个volatile写之前插入一个storestore屏障，会防止volatile写入操作和上面的其他写入操作重排序；
+- 在volatile写入之后插入一个storeload内存屏障，防止上面volatile写操作和下面的读操作重排序；
+- 在volatile读操作之后插入loadload和loadstore内存屏障，防止上面的volatile读操作和下面的普通读操作，volatile写操作和普通写操作重排序；
+
+>  从而实现有序性
+>  还有根据happens-before原则，每个volatile写操作先行发生与后续对这个变量的读操作。
+>  
 #### 8. CAS？CAS 有什么缺陷，如何解决？ ####
 
 </span><span class="suffix" style="display: none;"></span></h3>
@@ -414,6 +423,9 @@ flag = true）。（2）该变量没有包含在具有其他变量的不变式�
 #### 10. 如果线程过多,会怎样? ####
 > 线程太多会占用内存，而且频繁的线程上下文切换也会导致程序运行效率降低。
 #### 11. 说说 Semaphore原理？ ####
+
+
+
 #### 12. AQS组件，实现原理 ####
 AQS，即AbstractQueuedSynchronizer，是构建锁或者其他同步组件的基础框架，它使用了一个int成员变量表示同步状态，通过内置的FIFO队列来完成资源获取线程的排队工作。可以回答以下这几个关键点哈：
 - state 状态的维护。
@@ -722,7 +734,88 @@ ConditionI是跟Lock一起结合使用的，底层跟同步器（AQS）相关。
 唤醒节点之前，会将节点移到同步队列中。
 
 #### 16. 说说并发与并行的区别? ####
+
+> 并发是指两个或以上的任务在同一时间段内同时执行，由于操作系统CPU时间分片功能，让我们看起来任务是在同时执行，但实际上还是串行执行；如果并发任务运行在多核CPU的硬件上，任务会有部分时间片段存在并行执行。
+> 
+> 并行是指两个或以上的任务在同一时刻同时执行。例如：两个线程同时运行在两个单核的CPU上，那么这两个线程就是并行执行的。
+
 #### 17. 为什么要用线程池？Java的线程池内部机制，参数作用，几种工作阻塞队列，线程池类型以及使用场景 ####
+
+回答这些点：
+- 为什么要用线程池？
+- Java的线程池原理
+- 线程池核心参数
+- 几种工作阻塞队列
+- 线程池使用不当的问题
+- 线程池类型以及使用场景
+
+#### 为什么要用线程池？
+线程池：一个管理线程的池子。
+- 管理线程，避免增加创建线程和销毁线程的资源损耗。
+- 提高响应速度。
+- 重复利用。
+
+#### Java的线程池执行原理
+![](https://p6-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/efe9ed82093e4c8bab768eac79dffed3~tplv-k3u1fbpfcp-zoom-1.image)
+为了形象描述线程池执行，打个比喻：
+- 核心线程比作公司正式员工
+- 非核心线程比作外包员工
+- 阻塞队列比作需求池
+- 提交任务比作提需求
+![](https://p6-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/6ed3df3db91941e9b8d3e1078fdd02b5~tplv-k3u1fbpfcp-zoom-1.image)
+
+#### 线程池核心参数
+```
+public ThreadPoolExecutor(int corePoolSize, int maximumPoolSize,
+   long keepAliveTime,
+   TimeUnit unit,
+   BlockingQueue<Runnable> workQueue,
+   ThreadFactory threadFactory,
+   RejectedExecutionHandler handler) 
+```
+- corePoolSize： 线程池核心线程数最大值
+- maximumPoolSize： 线程池最大线程数大小
+- keepAliveTime： 线程池中非核心线程空闲的存活时间大小
+- unit： 线程空闲存活时间单位
+- workQueue： 存放任务的阻塞队列
+- threadFactory： 用于设置创建线程的工厂，可以给创建的线程设置有意义的名字，可方便排查问题。
+- handler：线城池的饱和策略事件，主要有四种类型拒绝策略。
+
+**四种拒绝策略**
+- AbortPolicy(抛出一个异常，默认的)
+- DiscardPolicy(直接丢弃任务)
+- DiscardOldestPolicy（丢弃队列里最老的任务，将当前这个任务继续提交给线程池）
+- CallerRunsPolicy（交给线程池调用所在的线程进行处理)
+
+#### 几种工作阻塞队列
+
+- ArrayBlockingQueue（用数组实现的有界阻塞队列，按FIFO排序量）
+- LinkedBlockingQueue（基于链表结构的阻塞队列，按FIFO排序任务，容量可以选择进行设置，不设置的话，将是一个无边界的阻塞队列）
+- DelayQueue（一个任务定时周期的延迟执行的队列）
+- PriorityBlockingQueue（具有优先级的无界阻塞队列）
+- SynchronousQueue（一个不存储元素的阻塞队列，每个插入操作必须等到另一个线程调用移除操作，否则插入操作一直处于阻塞状态）
+
+
+#### 线程池使用不当的问题
+线程池适用不当可能导致内存飙升问题哦
+
+有兴趣可以看我这篇文章哈:[源码角度分析-newFixedThreadPool线程池导致的内存飙升问题](https://juejin.im/post/6844903930502070285)
+
+#### 线程池类型以及使用场景
+- newFixedThreadPool
+> 适用于处理CPU密集型的任务，确保CPU在长期被工作线程使用的情况下，尽可能的少的分配线程，即适用执行长期的任务。
+- newCachedThreadPool
+> 用于并发执行大量短期的小任务。
+- newSingleThreadExecutor
+> 适用于串行执行任务的场景，一个任务一个任务地执行。
+- newScheduledThreadPool
+> 周期性执行任务的场景，需要限制线程数量的场景
+- newWorkStealingPool 
+> 建一个含有足够多线程的线程池，来维持相应的并行级别，它会通过工作窃取的方式，使得多核的 CPU 不会闲置，总会有活着的线程让 CPU 去运行,本质上就是一个 ForkJoinPool。)
+
+
+有兴趣可以看我这篇文章哈:[面试必备：Java线程池解析](https://juejin.im/post/6844903889678893063)
+
 #### 18. 如何保证多线程下 i++ 结果正确？ ####
 
 </span><span class="suffix" style="display: none;"></span></h3>
@@ -877,6 +970,9 @@ Nthreads=Ncpu*(1+w/c)
 - [根据CPU核心数确定线程池并发线程数](https://www.cnblogs.com/dennyzhangdd/p/6909771.html)
 
 #### 22. Java 内存模型？ ####
+
+![](https://p6-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/275f5b038d1d4e9ba308ab129df4aef3~tplv-k3u1fbpfcp-zoom-1.image)
+
 #### 23. 怎么实现所有线程在等待某个事件的发生才会去执行？ ####
 #### 24. 说一下 Runnable和 Callable有什么区别？ ####
 - Callable接口方法是call()，Runnable的方法是run()；
