@@ -1175,6 +1175,25 @@ null
 
 
 #### 28. java并发包concurrent及常用的类 ####
+
+> Condition.java;CountDownLatch.java;CyclicBarrier.java;Semaphore.java;ReentrantReadWriteLock.java;Callable.java;线程池：提供的线程池有几种：
+
+> //有数量限制的线程池
+ExecutorService service=Executors.newFixedThreadPool(4);
+//没有数量限制的线程池
+ExecutorService service=Executors.newCachedThreadPool();
+//单线程池
+ExecutorService service=Executors.newSingleThreadExecutor();
+他们都是通过下面这个线程池实现的
+有数量线程池的实现方式
+
+	public static ExecutorService newFixedThreadPool(int nThreads) {
+	return new ThreadPoolExecutor(nThreads/*核心线程数*/, nThreads/*最高线程数*/,
+	                                      0L/*高出核心线程数的线程最高存活时间*/, TimeUnit.MILLISECONDS/*高出核心线程数的线程最高存活时间单位*/,
+	                                      new LinkedBlockingQueue<Runnable>()/*任务队列*/);
+	
+	}
+
 #### 29. wait(),notify()和suspend(),resume()之间的区别 ####
 
 - wait() 使得线程进入阻塞等待状态，并且释放锁
@@ -1185,9 +1204,26 @@ null
 **suspend()不建议使用**,suspend()方法在调用后，线程不会释放已经占有的资 源（比如锁），而是占有着资源进入睡眠状态，这样容易引发死锁问题。
 
 
-30. FutureTask是什么？
-31. 一个线程如果出现了运行时异常会怎么样
-32. 生产者消费者模型的作用是什么
+#### 30. FutureTask是什么？ ####
+#### 31. 一个线程如果出现了运行时异常会怎么样 ####
+
+> Java中Throwable分为Exception和Error：
+出现Error的情况下，程序会停止运行。
+Exception分为RuntimeException和非运行时异常。
+非运行时异常必须处理，比如thread中sleep()时，必须处理InterruptedException异常，才能通过编译。
+而RuntimeException可以处理也可以不处理，因为编译并不能检测该类异常，比如NullPointerException、ArithmeticException）和 ArrayIndexOutOfBoundException等。
+
+> 由此题目所诉情形下发生的应该是RuntimeException，属于未检测异常，编译器不会检查该异常，可以处理，也可不处理。
+所以这里存在两种情形：
+
+> ① 如果该异常被捕获或抛出，则程序继续运行。
+
+> ② 如果异常没有被捕获该线程将会停止执行。
+
+> Thread.UncaughtExceptionHandler是用于处理未捕获异常造成线程突然中断情况的一个内嵌接口。当一个未捕获异常将造成线程中断的时候JVM会使用Thread.getUncaughtExceptionHandler()来查询线程的UncaughtExceptionHandler，并将线程和异常作为参数传递给handler的uncaughtException()方法进行处理。
+
+
+#### 32. 生产者消费者模型的作用是什么 ####
 33. ReadWriteLock是什么
 34. Java中用到的线程调度算法是什么？
 35. 线程池中的阻塞队列如果满了怎么办？
