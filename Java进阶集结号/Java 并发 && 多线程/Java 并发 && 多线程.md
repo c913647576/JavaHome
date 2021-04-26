@@ -368,9 +368,12 @@ flag = true）。（2）该变量没有包含在具有其他变量的不变式�
 > 
 >在JMM中，通过内存屏障实现具体如下：
 >
-- 在每个volatile写之前插入一个storestore屏障，会防止volatile写入操作和上面的其他写入操作重排序；
-- 在volatile写入之后插入一个storeload内存屏障，防止上面volatile写操作和下面的读操作重排序；
-- 在volatile读操作之后插入loadload和loadstore内存屏障，防止上面的volatile读操作和下面的普通读操作，volatile写操作和普通写操作重排序；
+
+> - 在每个volatile写之前插入一个storestore屏障，会防止volatile写入操作和上面的其他写入操作重排序；
+
+> - 在volatile写入之后插入一个storeload内存屏障，防止上面volatile写操作和下面的读操作重排序；
+
+> - 在volatile读操作之后插入loadload和loadstore内存屏障，防止上面的volatile读操作和下面的普通读操作，volatile写操作和普通写操作重排序；
 
 >  从而实现有序性
 >  还有根据happens-before原则，每个volatile写操作先行发生与后续对这个变量的读操作。
@@ -977,6 +980,19 @@ Nthreads=Ncpu*(1+w/c)
 ![](https://p6-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/275f5b038d1d4e9ba308ab129df4aef3~tplv-k3u1fbpfcp-zoom-1.image)
 
 #### 23. 怎么实现所有线程在等待某个事件的发生才会去执行？ ####
+
+> 方案一：读写锁
+> 
+　　刚开始主线程先获取写锁，然后所有子线程获取读锁，然后等事件发生时主线程释放写锁；
+
+> 方案二：CountDownLatch
+> 
+　　CountDownLatch初始值设为1，所有子线程调用await方法等待，等事件发生时调用countDown方法计数减为0；
+
+> 方案三：Semaphore
+> 
+　　Semaphore初始值设为N，刚开始主线程先调用acquire(N)申请N个信号量，其它线程调用acquire()阻塞等待，等事件发生时同时主线程释放N个信号量；
+
 #### 24. 说一下 Runnable和 Callable有什么区别？ ####
 - Callable接口方法是call()，Runnable的方法是run()；
 - Callable接口call方法有返回值，支持泛型，Runnable接口run方法无返回值。
@@ -1058,8 +1074,106 @@ null
 ```
 
 #### 25. 用Java编程一个会导致死锁的程序，你将怎么解决？ ####
+
+	public class DeadLock {
+	    public static final String LOCK_1 = "lock1";
+	    public static final String LOCK_2 = "lock2";
+	
+	    public static void main(String[] args) {
+	        Thread threadA = new Thread(() -> {
+	            try {
+	                while (true) {
+	                    synchronized (DeadLock.LOCK_1) {
+	                        System.out.println(Thread.currentThread().getName() + " 锁住 lock1");
+	                        Thread.sleep(1000);
+	                        synchronized (DeadLock.LOCK_2) {
+	                            System.out.println(Thread.currentThread().getName() + " 锁住 lock2");
+	                        }
+	                    }
+	                }
+	            } catch (Exception e) {
+	                e.printStackTrace();
+	            }
+	        });
+	
+	        Thread threadB = new Thread(() -> {
+	            try {
+	                while (true) {
+	                    synchronized (DeadLock.LOCK_2) {
+	                        System.out.println(Thread.currentThread().getName() + " 锁住 lock2");
+	                        Thread.sleep(1000);
+	                        synchronized (DeadLock.LOCK_1) {
+	                            System.out.println(Thread.currentThread().getName() + " 锁住 lock1");
+	                        }
+	                    }
+	                }
+	            } catch (Exception e) {
+	                e.printStackTrace();
+	            }
+	        });
+	
+	        threadA.start();
+	        threadB.start();
+	    }
+	}
+> 想要解决这个死锁很简单，我们只需要让threadA和threadB获取DeadLock.LOCK_1和DeadLock.LOCK_2的顺序相同即可，例如：
+
+	public class DeadLock {
+	    public static final String LOCK_1 = "lock1";
+	    public static final String LOCK_2 = "lock2";
+	
+	    public static void main(String[] args) {
+	        Thread threadA = new Thread(() -> {
+	            try {
+	                while (true) {
+	                    synchronized (DeadLock.LOCK_1) {
+	                        System.out.println(Thread.currentThread().getName() + " 锁住 lock1");
+	                        Thread.sleep(1000);
+	                        synchronized (DeadLock.LOCK_2) {
+	                            System.out.println(Thread.currentThread().getName() + " 锁住 lock2");
+	                        }
+	                    }
+	                }
+	            } catch (Exception e) {
+	                e.printStackTrace();
+	            }
+	        });
+	
+	        Thread threadB = new Thread(() -> {
+	            try {
+	                while (true) {
+	                    synchronized (DeadLock.LOCK_1) {
+	                        System.out.println(Thread.currentThread().getName() + " 锁住 lock1");
+	                        Thread.sleep(1000);
+	                        synchronized (DeadLock.LOCK_2) {
+	                            System.out.println(Thread.currentThread().getName() + " 锁住 lock2");
+	                        }
+	                    }
+	                }
+	            } catch (Exception e) {
+	                e.printStackTrace();
+	            }
+	        });
+	
+	        threadA.start();
+	        threadB.start();
+	    }
+	}
+> 除此之外，还有一种解决方法，那就是让DeadLock.LOCK_1和DeadLock.LOCK_2的值相同，例如：
+> 
+    public static final String LOCK_1 = "lock";
+    public static final String LOCK_2 = "lock";
+> 这是为什么呢？因为字符串有一个常量池，如果不同的线程持有的锁是具有相同字符的字符串锁时，那么两个锁实际上就是同一个锁。
+
 #### 26. 线程的生命周期，线程的几种状态。 ####
+
+> 新建状态（new）；就绪状态（start）；运行状态（该线程会进入Running执行状态，并且开始调用run()方法中逻辑代码）；阻塞状态（wait）；销毁状态（destroy）；
+> ![](https://img2018.cnblogs.com/blog/1223046/201907/1223046-20190722214114154-276488899.png)
+
 #### 27. ReentrantLock实现原理 ####
+
+
+
 #### 28. java并发包concurrent及常用的类 ####
 #### 29. wait(),notify()和suspend(),resume()之间的区别 ####
 
@@ -1098,7 +1212,9 @@ null
 54. 用Java写代码来解决生产者——消费者问题。
 55. 什么是竞争条件？你怎样发现和解决竞争？
 #### 56. 为什么我们调用start()方法时会执行run()方法，为什么我们不能直接调用run()方法？ ####
-57. Java中你怎样唤醒一个阻塞的线程？
+> 见题6；
+> 
+#### 57. Java中你怎样唤醒一个阻塞的线程？ ####
 58. 什么是不可变对象，它对写并发应用有什么帮助？
 59. 你在多线程环境中遇到的共同的问题是什么？你是怎么解决它的？
 60. Java 中能创建 volatile数组吗
