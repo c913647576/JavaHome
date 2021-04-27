@@ -355,18 +355,22 @@
 <p data-tool="mdnice编辑器" style="padding-top: 8px; padding-bottom: 8px; line-height: 26px; color: #2b2b2b; margin: 10px 0px; letter-spacing: 2px; font-size: 14px; word-spacing: 2px;">JVM执行start方法，会另起一条线程执行thread的run方法，这才起到多线程的效果~ <strong style="color: #3594F7; font-weight: bold;"><span>「</span>为什么我们不能直接调用run()方法？<span>」</span></strong>
 如果直接调用Thread的run()方法，其方法还是运行在主线程中，没有起到多线程效果。</p>
 <h3 data-tool="mdnice编辑器" style="padding: 0px; color: black; font-size: 17px; font-weight: bold; text-align: center; position: relative; margin-top: 20px; margin-bottom: 20px;"><span class="prefix" style="display: none;"></span><span class="content" style="border-bottom: 2px solid RGBA(79, 177, 249, .65); color: #2b2b2b; padding-bottom: 2px;"><span style="width: 30px; height: 30px; display: block; background-image: url(https://imgkr.cn-bj.ufileos.com/cdf294d0-6361-4af9-85e2-0913f0eb609b.png); background-position: center; background-size: 30px; margin: auto; opacity: 1; background-repeat: no-repeat; margin-bottom: -8px;"></span>
-
 #### 7. Java中的volatile关键是什么作用？怎样使用它？在Java中它跟synchronized方法有什么不同？volatile 的实现原理 ####
 
-voliate关键字的两个作用：1、 保证变量的内存可见性；2、 禁止指令重排序；
 
-volatile只能保证可见性和有序性（先行发生），也可以保证单次读/写的原子性，如 i = 1、isSuccess = false等操作，但是并不能保证 i++这种操作的原子性，因为本质上 i++是读、写两次操作。synchronized可以保证原子性、可见性及有序性。volatile在某些场景下可以代替 Synchronized。但是,volatile 的不能完全取代 Synchronized 的位置，只有在一些特殊的场景下，才能适用 volatile。总的来说，必须同时满足下面两个条件才能保证在并发环境的线程安
-全：（1）对变量的写操作不依赖于当前值（比如 i++），或者说是单纯的变量赋值（boolean
-flag = true）。（2）该变量没有包含在具有其他变量的不变式中， 也就是说，不同的 volatile 变量之间，不能互相依赖。 只有在状态真正独立于程序内其他内容时才能使用 volatile。
 
-实现原理：volatile的实现原理是在执行变量写操作后指令lock指令，这个指令会将变量实时写入内存而不是处理器的内存缓冲区，然后其他处理器通过缓存一致性协议嗅探到这个变量的变更，将该变量的缓存设为失效，从而实现内存可见性；
+> voliate关键字的两个作用：1、 保证变量的内存可见性；2、 禁止指令重排序；
+>
 
-在JMM中，通过内存屏障实现具体如下：
+> volatile只能保证可见性和有序性（先行发生），也可以保证单次读/写的原子性，如 i = 1、isSuccess = false等操作，但是并不能保证 i++这种操作的原子性，因为本质上 i++是读、写两次操作。synchronized可以保证原子性、可见性及有序性。volatile在某些场景下可以代替 Synchronized。但是,volatile 的不能完全取代 Synchronized 的位置，只有在一些特殊的场景下，才能适用 volatile。总的来说，必须同时满足下面两个条件才能保证在并发环境的线程安
+> 全：（1）对变量的写操作不依赖于当前值（比如 i++），或者说是单纯的变量赋值（boolean
+> flag = true）。（2）该变量没有包含在具有其他变量的不变式中， 也就是说，不同的 volatile 变量之间，不能互相依赖。 只有在状态真正独立于程序内其他内容时才能使用 volatile。
+
+> 实现原理：volatile的实现原理是在执行变量写操作后指令lock指令，这个指令会将变量实时写入内存而不是处理器的内存缓冲区，然后其他处理器通过缓存一致性协议嗅探到这个变量的变更，将该变量的缓存设为失效，从而实现内存可见性；
+>
+
+> 在JMM中，通过内存屏障实现具体如下：
+>
 
 > - 在每个volatile写之前插入一个storestore屏障，会防止volatile写入操作和上面的其他写入操作重排序；
 
@@ -374,8 +378,8 @@ flag = true）。（2）该变量没有包含在具有其他变量的不变式�
 
 > - 在volatile读操作之后插入loadload和loadstore内存屏障，防止上面的volatile读操作和下面的普通读操作，volatile写操作和普通写操作重排序；
 
-从而实现有序性
-还有根据happens-before原则，每个volatile写操作先行发生与后续对这个变量的读操作。
+> 从而实现有序性
+> 还有根据happens-before原则，每个volatile写操作先行发生与后续对这个变量的读操作。
 
 #### 8. CAS？CAS 有什么缺陷，如何解决？ ####
 
