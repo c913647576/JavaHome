@@ -3,9 +3,9 @@
 
 > 查看带有Synchronized语句块的class文件可以看到在同步代码块的起始位置插入了moniterenter指令，在同步代码块结束的位置插入了monitorexit指令。(JVM需要保证每一个monitorenter都有一个monitorexit与之相对应，但每个monitorexit不一定都有一个monitorenter)
 但是查看同步方法的class文件时，同步方法并没有通过指令monitorenter和monitorexit来完成，而被翻译成普通的方法调用和返回指令，只是在其常量池中多了ACC_SYNCHRONIZED标示符。JVM就是根据该标示符来实现方法的同步的：当方法调用时，调用指令将会检查方法的 ACC_SYNCHRONIZED 访问标志是否被设置，如果设置了，执行线程将先获取monitor，获取成功之后才能执行方法体，方法执行完后再释放monitor。在方法执行期间，其他任何线程都无法再获得同一个monitor对象。 其实本质上没有区别，只是方法的同步是一种隐式的方式来实现，无需通过字节码来完成。
->     
+>    
 >     synchronized的实现原理和应用总结
->     
+>    
 >     （1）synchronized同步代码块：synchronized关键字经过编译之后，会在同步代码块前后分别形成
 >     monitorenter和monitorexit字节码指令，在执行monitorenter指令的时候，首先尝试获取对象的锁，
 >     如果这个锁没有被锁定或者当前线程已经拥有了那个对象的锁，锁的计数器就加1，在执行monitorexit指
@@ -90,23 +90,23 @@
 > 获取锁
 > 
 >     检测Mark Word是否为可偏向状态，即是否为偏向锁1，锁标识位为01；
->     
+>    
 >     若为可偏向状态，则测试线程ID是否为当前线程ID，如果是，则执行步骤(5)，否则执行步骤(3)；
->     
+>    
 >     如果线程ID不为当前线程ID，则通过CAS操作竞争锁，竞争成功，则将Mark Word的线程ID替换为当前线
 >     程ID，否则执行线程(4)；
->     
+>    
 >     通过CAS竞争锁失败，证明当前存在多线程竞争情况，当到达全局安全点，获得偏向锁的线程被挂起，偏向
 >     锁升级为轻量级锁，然后被阻塞在安全点的线程继续往下执行同步代码块；
->     
+>    
 >     执行同步代码块
 > 
 > 释放锁
 > 
 > 偏向锁的释放采用了一种只有竞争才会释放锁的机制，线程是不会主动去释放偏向锁，需要等待其他线程来竞争。偏向锁的撤销需要等待全局安全点（这个时间点是上没有正在执行的代码）。其步骤如下：
->     
+>    
 >     暂停拥有偏向锁的线程，判断锁对象石是否还处于被锁定状态；
->     
+>    
 >     撤销偏向苏，恢复到无锁状态(01)或者轻量级锁的状态；
 
 > 那么轻量级锁和偏向锁的使用场景：
@@ -193,15 +193,15 @@
 > 4. 其他优化:
 > 
 >     自旋与自适应自旋：
->     
+>    
 >     如果持有锁的线程能在很短时间内释放锁资源，就可以让线程执行一个忙循环（自旋），等持有锁的线程释放锁后即可立即获取锁，这样就避免用户线程和内核的切换的消耗。但是线程自旋需要消耗cpu的资源，如果一直得不到锁就会浪费cpu资源。因此在jdk1.6引入了自适应自旋锁，自旋等待的时候不固定，而是由前一次在同一个锁上的自旋时间及锁的拥有者的状态来决定。
->     
+>    
 >     锁消除
->     
+>    
 >     锁消除是指虚拟机即时编译器在运行时，对于一些代码上要求同步但是被检测不可能存在共享数据竞争的锁进行消除。例如String类型的连接操作，String是一个不可变对象，字符串的连接操作总是通过生成新的String对象来进行的，Javac编译器会对String连接做自动优化，在JDK1.5的版本中使用的是StringBuffer对象的append操作，StringBuffer的append方法是同步方法，这段代码在经过即时编译器编译之后就会忽略掉所有的同步直接执行。在JDK1.5之后是使用的StringBuilder对象的append操作来优化字符串连接的。
->     
+>    
 >     锁粗化
->     
+>    
 >     将多次连接在一起的加锁、解锁操作合并为一次，将多个连续的锁扩展成一个范围更大的锁。例如每次调用StringBuffer.append方法都需要加锁，如果虚拟机检测到有一系列的连续操作都是对同一个对象反复加锁和解锁，就会将其合并成一个更大范围的加锁和解锁操作。
 
 #### 2. ThreadLocal原理，使用注意点，应用场景有哪些？ ####
@@ -439,7 +439,8 @@ AQS，即AbstractQueuedSynchronizer，是构建锁或者其他同步组件的基
 - 自定义同步器。
 - AQS全家桶的一些延伸，如：ReentrantLock等。
 - 
-#### state 状态的维护
+
+**state 状态的维护**
 
 - state，int变量，锁的状态，用volatile修饰，保证多线程中的可见性。
 - getState()和setState()方法采用final修饰，限制AQS的子类重写它们两。
@@ -449,14 +450,13 @@ AQS，即AbstractQueuedSynchronizer，是构建锁或者其他同步组件的基
 对CAS有兴趣的朋友，可以看下我这篇文章哈~
 [CAS乐观锁解决并发问题的一次实践](https://juejin.im/post/6844903869340712967#comment)
 
+**CLH队列**
 
-#### CLH队列
 ![](https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/3f37b908ad9b482fb60de6478817a7dc~tplv-k3u1fbpfcp-zoom-1.image)
 
 > **CLH(Craig, Landin, and Hagersten locks) 同步队列** 是一个FIFO双向队列，其内部通过节点head和tail记录队首和队尾元素，队列元素的类型为Node。AQS依赖它来完成同步状态state的管理，当前线程如果获取同步状态失败时，AQS则会将当前线程已经等待状态等信息构造成一个节点（Node）并将其加入到CLH同步队列，同时会阻塞当前线程，当同步状态释放时，会把首节点唤醒（公平锁），使其再次尝试获取同步状态。
 
-
-#### ConditionObject通知
+**ConditionObject通知**
 
 我们都知道，synchronized控制同步的时候，可以配合Object的wait()、notify()，notifyAll() 系列方法可以实现等待/通知模式。而Lock呢？它提供了条件Condition接口，配合await(),signal(),signalAll() 等方法也可以实现等待/通知机制。ConditionObject实现了Condition接口，给AQS提供条件变量的支持 。
 
@@ -468,22 +468,24 @@ ConditionObject队列与CLH队列的爱恨情仇：
 - 线程在某个ConditionObject对象上调用了singnal()方法后，等待队列中的firstWaiter会被加入到AQS的CLH队列中，等待被唤醒。
 - 当线程调用unLock()方法释放锁时，CLH队列中的head节点的下一个节点(在本例中是firtWaiter)，会被唤醒。
 
+**模板方法设计模式**
 
-#### 模板方法设计模式
 什么是模板设计模式？
 > 在一个方法中定义一个算法的骨架，而将一些步骤延迟到子类中。模板方法使得子类可以在不改变算法结构的情况下，重新定义算法中的某些步骤。
 
 AQS的典型设计模式就是模板方法设计模式啦。AQS全家桶（ReentrantLock，Semaphore）的衍生实现，就体现出这个设计模式。如AQS提供tryAcquire，tryAcquireShared等模板方法，给子类实现自定义的同步器。
 
-#### 独占与共享模式
+**独占与共享模式**
+
 - 独占式: 同一时刻仅有一个线程持有同步状态，如ReentrantLock。又可分为公平锁和非公平锁。
 - 共享模式:多个线程可同时执行，如Semaphore/CountDownLatch等都是共享式的产物。
 
-#### 自定义同步器
+**自定义同步器**
 
 你要实现自定义锁的话，首先需要确定你要实现的是独占锁还是共享锁，定义原子变量state的含义，再定义一个内部类去继承AQS，重写对应的模板方法即可啦
 
-#### AQS全家桶的一些延伸。
+**AQS全家桶的一些延伸。**
+
 Semaphore，CountDownLatch，ReentrantLock
 
 可以看下之前我这篇文章哈，[AQS解析与实战](https://juejin.im/post/6844903903188746247)
@@ -669,7 +671,8 @@ Object blocker作用？
 - Condition接口使用demo
 - Condition实现原理
 
-#### Condition接口与Object监视器方法对比
+**Condition接口与Object监视器方法对比**
+
 Java对象（Object），提供wait()、notify()，notifyAll() 系列方法，配合synchronized，可以实现等待/通知模式。而Condition接口配合Lock，通过await(),signal(),signalAll() 等方法，也可以实现类似的等待/通知机制。
 
 | 对比项 | 对象监视方法| Condition |
@@ -684,8 +687,8 @@ Java对象（Object），提供wait()、notify()，notifyAll() 系列方法，�
 | 唤醒等待队列中的一个线程| 支持  | 支持 |
 | 唤醒等待队列中的全部线程| 支持  | 支持 |
 
+**Condition接口使用demo**
 
-#### Condition接口使用demo
 ```
 public class ConditionTest {
     Lock lock = new ReentrantLock();
@@ -711,7 +714,8 @@ public class ConditionTest {
 }
 
 ```
-#### Condition实现原理
+**Condition实现原理**
+
 其实，同步队列和等待队列中节点类型都是同步器的静态内部类 AbstractQueuedSynchronizer.Node，接下来我们图解一下Condition的实现原理~
 
 **等待队列的基本结构图**
@@ -752,13 +756,15 @@ ConditionI是跟Lock一起结合使用的，底层跟同步器（AQS）相关。
 - 线程池使用不当的问题
 - 线程池类型以及使用场景
 
-#### 为什么要用线程池？
+**为什么要用线程池？**
+
 线程池：一个管理线程的池子。
 - 管理线程，避免增加创建线程和销毁线程的资源损耗。
 - 提高响应速度。
 - 重复利用。
 
-#### Java的线程池执行原理
+**Java的线程池执行原理**
+
 ![](https://p6-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/efe9ed82093e4c8bab768eac79dffed3~tplv-k3u1fbpfcp-zoom-1.image)
 为了形象描述线程池执行，打个比喻：
 - 核心线程比作公司正式员工
@@ -767,7 +773,8 @@ ConditionI是跟Lock一起结合使用的，底层跟同步器（AQS）相关。
 - 提交任务比作提需求
 ![](https://p6-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/6ed3df3db91941e9b8d3e1078fdd02b5~tplv-k3u1fbpfcp-zoom-1.image)
 
-#### 线程池核心参数
+**线程池核心参数**
+
 ```
 public ThreadPoolExecutor(int corePoolSize, int maximumPoolSize,
    long keepAliveTime,
@@ -785,12 +792,13 @@ public ThreadPoolExecutor(int corePoolSize, int maximumPoolSize,
 - handler：线城池的饱和策略事件，主要有四种类型拒绝策略。
 
 **四种拒绝策略**
+
 - AbortPolicy(抛出一个异常，默认的)
 - DiscardPolicy(直接丢弃任务)
 - DiscardOldestPolicy（丢弃队列里最老的任务，将当前这个任务继续提交给线程池）
 - CallerRunsPolicy（交给线程池调用所在的线程进行处理)
 
-#### 几种工作阻塞队列
+**几种工作阻塞队列**
 
 - ArrayBlockingQueue（用数组实现的有界阻塞队列，按FIFO排序量）
 - LinkedBlockingQueue（基于链表结构的阻塞队列，按FIFO排序任务，容量可以选择进行设置，不设置的话，将是一个无边界的阻塞队列）
@@ -798,13 +806,14 @@ public ThreadPoolExecutor(int corePoolSize, int maximumPoolSize,
 - PriorityBlockingQueue（具有优先级的无界阻塞队列）
 - SynchronousQueue（一个不存储元素的阻塞队列，每个插入操作必须等到另一个线程调用移除操作，否则插入操作一直处于阻塞状态）
 
+**线程池使用不当的问题**
 
-#### 线程池使用不当的问题
 线程池适用不当可能导致内存飙升问题哦
 
 有兴趣可以看我这篇文章哈:[源码角度分析-newFixedThreadPool线程池导致的内存飙升问题](https://juejin.im/post/6844903930502070285)
 
-#### 线程池类型以及使用场景
+**线程池类型以及使用场景**
+
 - newFixedThreadPool
 > 适用于处理CPU密集型的任务，确保CPU在长期被工作线程使用的情况下，尽可能的少的分配线程，即适用执行长期的任务。
 - newCachedThreadPool
@@ -875,7 +884,8 @@ public ThreadPoolExecutor(int corePoolSize, int maximumPoolSize,
 - 什么是伪共享
 - 如何解决伪共享问题
 
-#### 什么是伪共享
+**什么是伪共享**
+
 伪共享定义？
 > CPU的缓存是以缓存行(cache line)为单位进行缓存的，当多个线程修改相互独立的变量，而这些变量又处于同一个缓存行时就会影响彼此的性能。这就是伪共享
 
@@ -894,8 +904,8 @@ public ThreadPoolExecutor(int corePoolSize, int maximumPoolSize,
 - 这时候，如果线程2发起修改b，因为缓存行已经失效了，所以**core2 这时会重新从主内存中读取该 Cache line 数据**。读完后，因为它要修改b的值，那么CPU2就通知其他CPU核，当前缓存行（Cache line）又已经失效。
 - 酱紫，如果同一个Cache line的内容被多个线程读写，就很容易产生相互竞争，频繁回写主内存，会大大降低性能。
 
+**如何解决伪共享问题**
 
-#### 如何解决伪共享问题
 既然伪共享是因为相互独立的变量存储到相同的Cache line导致的，一个缓存行大小是64字节。那么，我们就可以**使用空间换时间**，即数据填充的方式，把独立的变量分散到不同的Cache line~
 
 共享内存demo例子:
@@ -1203,8 +1213,10 @@ ExecutorService service=Executors.newSingleThreadExecutor();
 
 **suspend()不建议使用**,suspend()方法在调用后，线程不会释放已经占有的资 源（比如锁），而是占有着资源进入睡眠状态，这样容易引发死锁问题。
 
-
 #### 30. FutureTask是什么？ ####
+
+> FutureTask实现了RunnableFuture接口，RunnableFuture接口又实现了Runnable，Future接口。该类提供了Future的基本实现（Future表示异步计算的结果），并返回异步执行的计算结果。它提供了一些Future方法的实现，可以检查计算是否完成（isDone），get()方法获取计算结果，如果计算尚未完成则将方法阻塞（阻塞时间可以指定）。cancel()方法取消任务执行，提供了isCancelled()方法来确定任务是正常完成还是被取消。一旦计算完成，就不能取消计算。如果您想使用Future是为了取消任务而不需要提供返回的结果，则可以使生命返回值为Future类型，并由于基础任务而返回null。
+
 #### 31. 一个线程如果出现了运行时异常会怎么样 ####
 
 > Java中Throwable分为Exception和Error：
@@ -1222,9 +1234,14 @@ Exception分为RuntimeException和非运行时异常。
 
 > Thread.UncaughtExceptionHandler是用于处理未捕获异常造成线程突然中断情况的一个内嵌接口。当一个未捕获异常将造成线程中断的时候JVM会使用Thread.getUncaughtExceptionHandler()来查询线程的UncaughtExceptionHandler，并将线程和异常作为参数传递给handler的uncaughtException()方法进行处理。
 
-
 #### 32. 生产者消费者模型的作用是什么 ####
-33. ReadWriteLock是什么
+
+> （1）通过平衡生产能力和消费能力来提升整个系统的运行效率。
+>
+> （2）解耦。生产者和消费者互相不受影响，可独立开发而不受对方制约。
+
+#### 33.ReadWriteLock是什么
+
 34. Java中用到的线程调度算法是什么？
 35. 线程池中的阻塞队列如果满了怎么办？
 36. 线程池中 submit()和 execute()方法有什么区别？
