@@ -834,6 +834,7 @@ public ThreadPoolExecutor(int corePoolSize, int maximumPoolSize,
 #### 18. 如何保证多线程下 i++ 结果正确？ ####
 
 </span><span class="suffix" style="display: none;"></span></h3>
+
 <figure data-tool="mdnice编辑器" style="margin: 0; margin-top: 10px; margin-bottom: 10px; display: flex; flex-direction: column; justify-content: center; align-items: center;"><img src="https://user-gold-cdn.xitu.io/2020/7/28/17392b5e8436976e?w=935&amp;h=464&amp;f=png&amp;s=55515" alt style="max-width: 100%; border-radius: 6px; display: block; margin: 20px auto; object-fit: contain; box-shadow: 2px 4px 7px #999;"></figure>
 <ul data-tool="mdnice编辑器" style="margin-top: 8px; margin-bottom: 8px; padding-left: 25px; font-size: 15px; color: #595959; list-style-type: circle;">
 <li><section style="margin-top: 5px; margin-bottom: 5px; line-height: 26px; text-align: left; font-size: 14px; font-weight: normal; color: #595959;">使用循环CAS，实现i++原子操作</section></li><li><section style="margin-top: 5px; margin-bottom: 5px; line-height: 26px; text-align: left; font-size: 14px; font-weight: normal; color: #595959;">使用锁机制，实现i++原子操作</section></li><li><section style="margin-top: 5px; margin-bottom: 5px; line-height: 26px; text-align: left; font-size: 14px; font-weight: normal; color: #595959;">使用synchronized，实现i++原子操作</section></li></ul>
@@ -1245,28 +1246,145 @@ Exception分为RuntimeException和非运行时异常。
 
 #### 33.ReadWriteLock是什么
 
-34. Java中用到的线程调度算法是什么？
-35. 线程池中的阻塞队列如果满了怎么办？
-36. 线程池中 submit()和 execute()方法有什么区别？
-37. 介绍一下 AtomicInteger 类的原理？
-38. 多线程锁的升级原理是什么？
-39. 指令重排序，内存栅栏等？
-40. Java 内存模型 happens-before原则
-41. 公平锁/非公平锁
-42. 可重入锁
-43. 独享锁、共享锁
-44. 偏向锁/轻量级锁/重量级锁
-45. 如何保证内存可见性
-46. 非核心线程延迟死亡，如何实现？
-47. ConcurrentHashMap读操作为什么不需要加锁？
-48. ThreadLocal 如何解决 Hash 冲突？
-49. ThreadLocal 的内存泄露是怎么回事？
-50. 为什么ThreadLocalMap 的 key是弱引用，设计理念是？
-51. 同步方法和同步代码块的区别是什么？
-52. 在Java中Lock接口比synchronized块的优势是什么？如果你需要实现一个高效的缓存，它允许多个用户读，但只允许一个用户写，以此来保持它的完整性，你会怎样去实现它？
-53. 用Java实现阻塞队列。
-54. 用Java写代码来解决生产者——消费者问题。
-55. 什么是竞争条件？你怎样发现和解决竞争？
+#### 34.Java中用到的线程调度算法是什么？
+
+> java虚拟机使用抢占式线程调度模型。即当一个线程用完CPU之后，操作系统会根据线程优先级、线程饥饿情况的数据计算出一个总的线程优先级并分配下一个时间片给优先级高的线程。
+>
+> 操作系统中可能会出现某条线程常常获取到CPU控制权的情况，为了让某些优先级比较低的线程也能获取到CPU的控制权，可以使用Thread.sleep(0)手动触发一次操作系统分配时间片的操作，这也是平衡CPU控制权的一种操作。
+
+#### 35.线程池中的阻塞队列如果满了怎么办？
+
+> 线程池如果使用无界阻塞队列，在新的任务不断提交到线程池时，回事队列变得越来越大，此时会导致内存飙升进而出现OOM异常。解决办法是给线程池设置有界队列加一个拒绝策略。
+>
+> 四种拒绝策略：ThreadPoolExecutor.AbortPolicy（丢弃任务并抛出RejectedExecutionException异常，线程池默认策略）；ThreadPoolExecutor.DiscardPolicy（直接丢弃任务但不抛出异常）；ThreadPoolExecutor.DiscardOldestPolicy（丢弃队列中老的任务，然后重新尝试执行任务，不能执行任务就再次丢弃老的任务，直到可执行任务为止）；ThreadPoolExecutor.CallerRunsPolicy（交由调用线程执行任务，即主线程处理该任务）；
+>
+> 生产环境线程池队列满了又不能丢弃任务的解决方案：可以根据自己的业务需要，选择通过实现RejectedExecutionHandler接口来自定义拒绝策略。比如把线程池无法执行的任务信息持久化到数据库，后台专门起一个线程，后续等待线程池的工作负载降低了，这个后台线程就可以慢慢的从磁盘里读取之前持久化的任务重新提交到线程池。
+
+#### 36.线程池中 submit()和 execute()方法有什么区别？
+
+（1）execute()只能执行实现了Runnable接口的线程，submit()可以执行实现了Runnable接口或Callable接口的线程。
+
+（2）execute()方法没有返回值，而submit()方法有返回值。
+
+#### 37.介绍一下 AtomicInteger 类实现原子操作的原理？
+
+> 我们先来看一下getAndIncrement的源代码：
+>
+> ```
+> public final int getAndIncrement() {
+>        for (;;) {
+>              int current = get();  // 取得AtomicInteger里存储的数值
+>            int next = current + 1;  // 加1
+>            if (compareAndSet(current, next))   // 调用compareAndSet执行原子更新操作
+>                return current;
+>        }
+>    }
+> ```
+>
+> 这段代码写的很巧妙：
+> （1）compareAndSet方法首先判断当前值是否等于current；
+> （2）如果当前值 = current ，说明AtomicInteger的值没有被其他线程修改；
+> （3）如果当前值 != current，说明AtomicInteger的值被其他线程修改了，这时会再次进入循环重新比较；
+>
+> 注意这里的compareAndSet方法，源代码如下：
+>
+> ```
+> public final boolean compareAndSet(int expect, int update) {
+>     return unsafe.compareAndSwapInt(this, valueOffset, expect, update);
+> }
+> ```
+>
+> 调用Unsafe来实现
+> private static final Unsafe unsafe = Unsafe.getUnsafe();
+
+#### 37.多线程锁的升级原理是什么？
+
+> 锁的级别从低到高：
+>
+> 无锁 -> 偏向锁 -> 轻量级锁 -> 重量级锁
+>
+>  
+>
+> 锁分级别原因：
+>
+> 没有优化以前，synchronized是重量级锁（悲观锁），使用 wait 和 notify、notifyAll 来切换线程状态非常消耗系统资源；线程的挂起和唤醒间隔很短暂，这样很浪费资源，影响性能。所以 JVM 对 synchronized 关键字进行了优化，把锁分为 无锁、偏向锁、轻量级锁、重量级锁 状态。
+>
+>  
+>
+> 无锁：没有对资源进行锁定，所有的线程都能访问并修改同一个资源，但同时只有一个线程能修改成功，其他修改失败的线程会不断重试直到修改成功。
+>
+>  
+>
+> 偏向锁：对象的代码一直被同一线程执行，不存在多个线程竞争，该线程在后续的执行中自动获取锁，降低获取锁带来的性能开销。偏向锁，指的就是偏向第一个加锁线程，该线程是不会主动释放偏向锁的，只有当其他线程尝试竞争偏向锁才会被释放。
+>
+> 偏向锁的撤销，需要在某个时间点上没有字节码正在执行时，先暂停拥有偏向锁的线程，然后判断锁对象是否处于被锁定状态。如果线程不处于活动状态，则将对象头设置成无锁状态，并撤销偏向锁；
+>
+> 如果线程处于活动状态，升级为轻量级锁的状态。
+>
+>  
+>
+> 轻量级锁：轻量级锁是指当锁是偏向锁的时候，被第二个线程 B 所访问，此时偏向锁就会升级为轻量级锁，线程 B 会通过自旋的形式尝试获取锁，线程不会阻塞，从而提高性能。
+>
+> 当前只有一个等待线程，则该线程将通过自旋进行等待。但是当自旋超过一定的次数时，轻量级锁便会升级为重量级锁；当一个线程已持有锁，另一个线程在自旋，而此时又有第三个线程来访时，轻量级锁也会升级为重量级锁。
+>
+>  
+>
+> 重量级锁：指当有一个线程获取锁之后，其余所有等待获取该锁的线程都会处于阻塞状态。
+>
+> 重量级锁通过对象内部的监视器（monitor）实现，而其中 monitor 的本质是依赖于底层操作系统的 Mutex Lock 实现，操作系统实现线程之间的切换需要从用户态切换到内核态，切换成本非常高。
+>
+> ![1619622902332](C:\Users\Administrator.USER-20190223MK\AppData\Roaming\Typora\typora-user-images\1619622902332.png)
+
+
+
+#### 38.指令重排序，内存栅栏等？
+
+见题7
+
+#### 39.Java 内存模型 happens-before原则
+
+jvm专题40题
+
+#### 40.公平锁/非公平锁
+
+公平锁就是先进这个队列的线程，也先出队列获得资源执行任务，而非公平锁的话，则是线程还没有进队列之前可以与队列中的线程竞争尝试获得锁，如果获取失败，则进队列，此时也是要乖乖等前面出队才行。 
+
+公平锁是在ReentrankLock中实现的，synchronized中实现的是非公平锁。
+
+#### 41.可重入锁
+
+ 可重入锁就是一个线程可重复获得同一把锁资源。主要是用途就是在递归方面，还有就是防止死锁，比如在一个同步方法块中调用了另一个相同锁对象的同步方法块 。
+
+#### 42.独享锁、共享锁
+
+ 共享锁可以由多个线程获取使用，而独享锁只能由一个线程获取。 对ReentrantReadWriteLock其读锁是共享锁，其写锁是独占锁 读锁的共享锁可保证并发读是非常高效的，读写，写读，写写的过程是互斥的。其中获得写锁的线程还能同时获得读锁，然后通过释放写锁来降级。读锁则不能升级 。**读写锁的升降级？**
+
+#### 43.偏向锁/轻量级锁/重量级锁
+
+见题37
+
+#### 44.如何保证内存可见性
+
+见题7
+
+#### 45.非核心线程延迟死亡，如何实现？
+
+
+
+#### 46.ConcurrentHashMap读操作为什么不需要加锁？
+
+#### 47.ThreadLocal 如何解决 Hash 冲突？
+
+#### 48.ThreadLocal 的内存泄露是怎么回事？
+
+#### 49.为什么ThreadLocalMap 的 key是弱引用，设计理念是？
+
+#### 50.同步方法和同步代码块的区别是什么？
+
+1. 在Java中Lock接口比synchronized块的优势是什么？如果你需要实现一个高效的缓存，它允许多个用户读，但只允许一个用户写，以此来保持它的完整性，你会怎样去实现它？
+2. 用Java实现阻塞队列。
+3. 用Java写代码来解决生产者——消费者问题。
+4. 什么是竞争条件？你怎样发现和解决竞争？
 #### 56. 为什么我们调用start()方法时会执行run()方法，为什么我们不能直接调用run()方法？ ####
 > 见题6；
 > 
