@@ -1384,11 +1384,105 @@ Exception分为RuntimeException和非运行时异常。
 
 #### 46.ConcurrentHashMap读操作为什么不需要加锁？
 
+>  在jdk1.7中是采用Segment + HashEntry + ReentrantLock的方式进行实现的，而1.8中放弃了Segment臃肿的设计，取而代之的是采用Node + CAS + Synchronized来保证并发安全进行实现。 
+>
+> 1. JDK1.8的实现降低锁的粒度，JDK1.7版本锁的粒度是基于Segment的，包含多个HashEntry，而JDK1.8锁的粒度就是HashEntry（首节点）
+> 2. JDK1.8版本的数据结构变得更加简单，使得操作也更加清晰流畅，因为已经使用synchronized来进行同步，所以不需要分段锁的概念，也就不需要Segment这种数据结构了，由于粒度的降低，实现的复杂度也增加了
+> 3. JDK1.8使用红黑树来优化链表，基于长度很长的链表的遍历是一个很漫长的过程，而红黑树的遍历效率是很快的，代替一定阈值的链表，这样形成一个最佳拍档
+>
+> ![](https://img-blog.csdnimg.cn/20190802152603746.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2wxODg0ODk1NjczOQ==,size_16,color_FFFFFF,t_70)
+
+> ### get操作源码
+>
+> 1. 首先计算hash值，定位到该table索引位置，如果是首节点符合就返回
+> 2. 如果遇到扩容的时候，会调用标志正在扩容节点ForwardingNode的find方法，查找该节点，匹配就返回
+> 3. 以上都不符合的话，就往下遍历节点，匹配就返回，否则最后就返回null
+>
+>  get没有加锁的话，ConcurrentHashMap是如何保证读到的数据不是脏数据的呢？ 
+>
+> ### volatile登场
+>
+> 对于可见性，Java提供了volatile关键字来保证可见性、有序性。但不保证原子性。
+>
+> 普通的共享变量不能保证可见性，因为普通共享变量被修改之后，什么时候被写入主存是不确定的，当其他线程去读取时，此时内存中可能还是原来的旧值，因此无法保证可见性。
+>
+> - volatile关键字对于基本类型的修改可以在随后对多个线程的读保持一致，但是对于引用类型如数组，实体bean，仅仅保证引用的可见性，但并不保证引用内容的可见性。。
+> - 禁止进行指令重排序。
+>
+>  背景：为了提高处理速度，处理器不直接和内存进行通信，而是先将系统内存的数据读到内部缓存（L1，L2或其他）后再进行操作，但操作完不知道何时会写到内存。 
+>
+> - 如果对声明了volatile的变量进行写操作，JVM就会向处理器发送一条指令，将这个变量所在缓存行的数据写回到系统内存。但是，就算写回到内存，如果其他处理器缓存的值还是旧的，再执行计算操作就会有问题。
+> - 在多处理器下，为了保证各个处理器的缓存是一致的，就会实现缓存一致性协议，当某个CPU在写数据时，如果发现操作的变量是共享变量，则会通知其他CPU告知该变量的缓存行是无效的，因此其他CPU在读取该变量时，发现其无效会重新从主存中加载数据。
+>
+> **总结下来：**
+>
+> 第一：使用volatile关键字会强制将修改的值立即写入主存；
+>
+> 第二：使用volatile关键字的话，当线程2进行修改时，会导致线程1的工作内存中缓存变量的缓存行无效（反映到硬件层的话，就是CPU的L1或者L2缓存中对应的缓存行无效）；
+>
+> 第三：由于线程1的工作内存中缓存变量的缓存行无效，所以线程1再次读取变量的值时会去主存读取。
+>
+> ### 是加在数组上的volatile吗?
+>
+> ```
+>   transient volatile Node<K,V>[] table;
+> ```
+>
+>  我们知道volatile可以修饰数组的，只是意思和它表面上看起来的样子不同。举个栗子，volatile int array[10]是指array的地址是volatile的而不是数组元素的值是volatile的. 
+>
+> ### 用volatile修饰的Node
+>
+>  get操作可以无锁是由于Node的元素val和指针next是用volatile修饰的，在多线程环境下线程A修改结点的val或者新增节点的时候是对线程B可见的。 
+>
+>  既然volatile修饰数组对get操作没有效果那加在数组上的volatile的目的是什么呢？ 
+>
+>  其实就是为了使得Node数组在扩容的时候对其他线程具有可见性而加的volatile 
+>
+> ### 总结
+>
+> - 在1.8中ConcurrentHashMap的get操作全程不需要加锁，这也是它比其他并发集合比如hashtable、用Collections.synchronizedMap()包装的hashmap;安全效率高的原因之一。
+> - get操作全程不需要加锁是因为Node的成员val是用volatile修饰的和数组用volatile修饰没有关系。
+> - 数组用volatile修饰主要是保证在数组扩容的时候保证可见性。
+
 #### 47.ThreadLocal 如何解决 Hash 冲突？
+
+> 和HashMap的最大的不同在于，ThreadLocalMap结构非常简单，没有next引用，也就是说ThreadLocalMap中解决Hash冲突的方式并非链表的方式，而是采用**线性探测**的方式，所谓线性探测，就是根据初始key的hashcode值确定元素在table数组中的位置，如果发现这个位置上已经有其他key值的元素被占用，则利用固定的算法寻找一定步长的下个位置，依次判断，直至找到能够存放的位置。
+>  ThreadLocalMap解决Hash冲突的方式就是简单的步长加1或减1，寻找下一个相邻的位置。 
+>
+>  显然ThreadLocalMap采用线性探测的方式解决Hash冲突的***\*效率很低\****，如果有大量不同的ThreadLocal对象放入map中时发送冲突，或者发生二次冲突，则效率很低。 
+>
+>  **所以这里引出的良好建议是：每个线程只存一个变量，这样的话所有的线程存放到map中的Key都是相同的ThreadLocal，如果一个线程要保存多个变量，就需要创建多个ThreadLocal，多个ThreadLocal放入Map中时会极大的增加Hash冲突的可能。** 
 
 #### 48.ThreadLocal 的内存泄露是怎么回事？
 
+> ThreadLocal在ThreadLocalMap中是以一个弱引用身份被Entry中的Key引用的
+>
+> 由于Entry的key是弱引用，而Value是强引用。这就导致了一个问题，ThreadLocal在没有外部对象强引用时，发生GC时弱引用Key会被回收，而Value不会回收，如果创建ThreadLocal的线程一直持续运行，那么这个Entry对象中的value就有可能一直得不到回收，发生内存泄露。
+
 #### 49.为什么ThreadLocalMap 的 key是弱引用，设计理念是？
+
+> key 使用强引用：引用的ThreadLocal的对象被回收了，但是ThreadLocalMap还持有ThreadLocal的强引用，如果没有手动删除，ThreadLocal不会被回收，导致Entry内存泄漏。
+>
+> key 使用弱引用：引用的ThreadLocal的对象被回收了，由于ThreadLocalMap持有ThreadLocal的弱引用，即使没有手动删除，ThreadLocal也会被回收。value在下一次ThreadLocalMap调用set,get，remove的时候会被清除。
+>
+> 比较两种情况，我们可以发现：由于ThreadLocalMap的生命周期跟Thread一样长，如果都没有手动删除对应key，都会导致内存泄漏，但是使用弱引用可以多一层保障：弱引用ThreadLocal不会内存泄漏，对应的value在下一次ThreadLocalMap调用set,get,remove的时候会被清除。
+>
+> **如何避免泄漏**
+> 既然Key是弱引用，那么我们要做的事，就是在调用ThreadLocal的get()、set()方法时完成后再调用remove方法，将Entry节点和Map的引用关系移除，这样整个Entry对象在GC Roots分析后就变成不可达了，下次GC的时候就可以被回收。
+>
+> 如果使用ThreadLocal的set方法之后，没有显示的调用remove方法，就有可能发生内存泄露，所以养成良好的编程习惯十分重要，使用完ThreadLocal之后，记得调用remove方法。
+>
+> ```
+> ThreadLocal<Session> threadLocal = new ThreadLocal<Session>();
+> try {
+>     threadLocal.set(new Session(1, "Misout的博客"));
+>     // 其它业务逻辑
+> } finally {
+>     threadLocal.remove();
+> ```
+>
+> - 每个ThreadLocal只能保存一个变量副本，如果想要上线一个线程能够保存多个副本以上，就需要创建多个ThreadLocal。
+> - ThreadLocal内部的ThreadLocalMap键为弱引用，会有内存泄漏的风险。
 
 #### 50.同步方法和同步代码块的区别是什么？
 
