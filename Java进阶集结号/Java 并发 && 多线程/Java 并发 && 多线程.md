@@ -1494,17 +1494,144 @@ Exception分为RuntimeException和非运行时异常。
 
 #### 51.在Java中Lock接口比synchronized块的优势是什么？如果你需要实现一个高效的缓存，它允许多个用户读，但只允许一个用户写，以此来保持它的完整性，你会怎样去实现它？
 
+> Lock和synchronized有一下几点不同：
+>
+> （1）Lock是一个接口，而synchronized是java关键字，是内置的语言实现的；
+>
+> （2）synchronized在发生异常是会自动释放线程占有的锁，因此不会导致死锁现象发生；而Lock在发生异常时，如果没有主动通过unLock去释放锁，则很可能造成死锁现象，因此使用Lock时需要在finally中释放锁；
+>
+> （3）Lock可以让等待锁的线程响应中断，而synchronized却不行，使用synchronized时，等待的线程会一直等待下去，不能等待响应中断；
+>
+> （4）通过Lock可以知道有没有成功获取锁，而synchronized却无法办到；
+>
+> （5）Lock可以提高多个线程进行读操作的效率；
+>
+> 在性能上来说，如果竞争资源不激烈，两者的性能是差不多的，而当竞争资源非常激烈时，此时Lock的性能要远远优于synchronized的（竞争激烈的情况下synchronized是重量级锁，所以性能不高）。在使用时要根据实际情况来选择。
+>
+>  实现高速缓存一般使用读写锁实现，读写锁在读读之间是共享锁，读写、写读、写写之间是互斥锁；使用java.util.concurrent.locks包下面ReadWriteLock接口,该接口下面的实现类[ReentrantReadWriteLock](https://blog.csdn.net/weixin_34362991/article/details/92712655)维护了一个读锁和一个写解锁，具体实现代码示例如下：
+>
+> ```
+> import java.util.Date;
+> import java.util.concurrent.locks.ReadWriteLock;
+> import java.util.concurrent.locks.ReentrantReadWriteLock;
+>  
+> /**
+>  * 你需要实现一个高效的缓存，它允许多个用户读，但只允许一个用户写，以此来保持它的完整性，你会怎样去实现它？
+>  * @author user
+>  *
+>  */
+> public class Test2 {
+> 	public static void main(String[] args) {
+> 		for (int i = 0; i < 3; i++) {
+> 			new Thread(new Runnable() {
+> 				
+> 				@Override
+> 				public void run() {
+> 					MyData.read();
+> 				}
+> 			}).start();
+> 		}
+> 		for (int i = 0; i < 3; i++) {
+> 			new Thread(new Runnable() {
+> 				
+> 				@Override
+> 				public void run() {
+> 					MyData.write("a");
+> 				}
+> 			}).start();
+> 		}
+> 	}
+> }
+>  
+> class MyData{
+> 	//数据
+> 	private static String data = "0";
+> 	//读写锁
+> 	private static ReadWriteLock rw = new ReentrantReadWriteLock();
+> 	//读数据
+> 	public static void read(){
+> 		rw.readLock().lock();
+> 		System.out.println(Thread.currentThread()+"读取一次数据："+data+"时间："+new Date());
+> 		try {
+> 			Thread.sleep(1000);
+> 		} catch (InterruptedException e) {
+> 			e.printStackTrace();
+> 		} finally {
+> 			rw.readLock().unlock();
+> 		}
+> 	}
+> 	//写数据
+> 	public static void write(String data){
+> 		rw.writeLock().lock();
+> 		System.out.println(Thread.currentThread()+"对数据进行修改一次："+data+"时间："+new Date());
+> 		try {
+> 			Thread.sleep(1000);
+> 		} catch (InterruptedException e) {
+> 			e.printStackTrace();
+> 		} finally {
+> 			rw.writeLock().unlock();
+> 		}
+> 	}
+> }
+> ```
+
 #### 52.用Java实现阻塞队列。
+
+
 
 #### 53.用Java写代码来解决生产者——消费者问题。
 
 #### 54.什么是竞争条件？你怎样发现和解决竞争？
 
+> 当两个或以上的线程对同一个数据进行操作的时候，可能会产生“竞争条件”的现象。
+>
+> 解决：如果在一个线程对数据进行操作的时候，禁止另外一个线程操作此数据，那么，就能很好的解决以上的问题了。这种操作叫做给线程枷锁。
+
 #### 55. 为什么我们调用start()方法时会执行run()方法，为什么我们不能直接调用run()方法？ ####
 > 见题6；
 > 
 #### 56. Java中你怎样唤醒一个阻塞的线程？ ####
-58. 什么是不可变对象，它对写并发应用有什么帮助？
+
+> 如果线程是因为调用了wait()、sleep()或者join()方法而导致的阻塞，可以中断线程，并且通过抛出InterruptedException来唤醒它；如果线程遇到了IO阻塞，无能为力，因为IO是操作系统实现的，Java代码并没有办法直接接触到操作系统。以下是详细的唤醒方法：
+>
+> 1. sleep() 方法
+>
+> sleep（毫秒），指定以毫秒为单位的时间，使线程在该时间内进入线程阻塞状态，期间得不到cpu的时间片，等到时间过去了，线程重新进入可执行状态。（暂停线程，不会释放锁）
+>
+> 2.suspend() 和 resume() 方法
+>
+> 挂起和唤醒线程，suspend e()使线程进入阻塞状态，只有对应的resume e()被调用的时候，线程才会进入可执行状态。（不建议用，容易发生死锁）
+>
+> 3. yield() 方法
+>
+> 会使的线程放弃当前分得的cpu时间片，但此时线程任然处于可执行状态，随时可以再次分得cpu时间片。yield()方法只能使同优先级的线程有执行的机会。调用 yield()的效果等价于调度程序认为该线程已执行了足够的时间从而转到另一个线程。（暂停当前正在执行的线程，并执行其他线程，且让出的时间不可知）
+>
+> 4.wait() 和 notify() 方法
+>
+> 两个方法搭配使用，wait()使线程进入阻塞状态，调用notify()时，线程进入可执行状态。wait()内可加或不加参数，加参数时是以毫秒为单位，当到了指定时间或调用notify()方法时，进入可执行状态。（属于Object类，而不属于Thread类，wait()会先释放锁住的对象，然后再执行等待的动作。由于wait()所等待的对象必须先锁住，因此，它只能用在同步化程序段或者同步化方法内，否则，会抛出异常IllegalMonitorStateException.）
+>
+> 5.join()方法
+>
+> 也叫线程加入。是当前线程A调用另一个线程B的join()方法，当前线程转A入阻塞状态，直到线程B运行结束，线程A才由阻塞状态转为可执行状态。
+>
+> 以上是Java线程唤醒和阻塞的五种常用方法，不同的方法有不同的特点，其中wait() 和 notify()是其中功能最强大、使用最灵活的方法，但这也导致了它们效率较低、较容易出错的特性，因此，在实际应用中应灵活运用各种方法，以达到期望的目的与效果！
+
+#### 57. 什么是不可变对象，它对写并发应用有什么帮助？
+
+> 1、 不可变对象(Immutable Objects)即对象一旦被创建它的状态（对象的数据，也即对象属性值）就不能改变，反之即为可变对象(Mutable Objects)。
+>
+> 2、 不可变对象的类即为不可变类(Immutable Class)。Java 平台类库中包含许多不可变类，如 String、基本类型的包装类、BigInteger 和 BigDecimal 等。
+>
+> 3、 只有满足如下状态，一个对象才是不可变的；
+>
+> - 它的状态不能在创建后再被修改；
+>
+>
+> - 所有域都是 final 类型；并且，它被正确创建（创建期间没有发生 this 引用的逸出）。
+>
+>
+> 不可变对象保证了对象的内存可见性，对不可变对象的读取不需要进行额外的同步手段，提升了代码执行效率。
+
 59. 你在多线程环境中遇到的共同的问题是什么？你是怎么解决它的？
 60. Java 中能创建 volatile数组吗
 61. volatile 能使得一个非原子操作变成原子操作吗
