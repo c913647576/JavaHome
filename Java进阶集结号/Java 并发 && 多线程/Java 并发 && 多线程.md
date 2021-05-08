@@ -1577,7 +1577,228 @@ Exception分为RuntimeException和非运行时异常。
 
 #### 52.用Java实现阻塞队列。
 
-
+> **方法一：synchronized, wait, notify**
+>
+> ```
+> public class Resource {
+>     //当前资源的数量
+>     int num = 0;
+>     //当前资源的上限
+>     int size = 10;
+>  
+>     //消费资源
+>     public synchronized void remove() {
+>         //如果num为0，没有资源了，需要等待
+>         while (num == 0) {//这里jdk源码里推荐用while，因为有可能出现虚假唤醒，所以要再次确认
+>             try {
+>                 System.out.println("消费者进入等待");
+>                 this.wait();//线程等待，并释放锁
+>             } catch (InterruptedException e) {
+>                 e.printStackTrace();
+>             }
+>         }
+>         //如果线程可以执行到这里，说明资源里有资源可以消费
+>         num--;
+>         System.out.println("消费者线程为:" + Thread.currentThread().getName() + "--资源数量:" + num);
+>         this.notify();//唤醒其他正在等待的线程
+>     }
+>  
+>     //生产资源
+>     public synchronized void put() {
+>         //如果资源满了，就进入阻塞状态
+>         while (num == size) {//这里jdk源码里推荐用while，因为有可能出现虚假唤醒，所以要再次确认
+>             try {
+>                 System.out.println("生产者进入等待");
+>                 this.wait();//线程进入阻塞状态，并释放锁
+>  
+>             } catch (InterruptedException e) {
+>                 e.printStackTrace();
+>             }
+>         }
+>  
+>         num++;
+>         System.out.println("生产者线程为:" + Thread.currentThread().getName() + "--资源数量:" + num);
+>         this.notify();//唤醒其他正在等待的线程
+>     }
+> }
+> ```
+>
+> ```
+> // 消费者
+> public class Consumer implements Runnable {
+>  
+>     private Resource resource;
+>  
+>     public Consumer(Resource resource) {
+>         this.resource = resource;
+>     }
+>  
+>     @Override
+>     public void run() {
+>         while (true){
+>             resource.remove();
+>         }
+>  
+>     }
+> }
+> ```
+>
+> ```
+>  // 生产者
+> public class Producer implements Runnable {
+>  
+>     private Resource resource;
+>  
+>     public Producer(Resource resource){
+>         this.resource=resource;
+>     }
+>  
+>     @Override
+>     public void run() {
+>         while (true){
+>             resource.put();
+>         }
+>     }
+> }
+> ```
+>
+> ```
+> // 测试代码
+> public class TestConsumerAndProducer {
+>  
+>     public static void main(String[] args) {
+>         Resource resource = new Resource();
+>         //生产线程
+>         Producer p1 = new Producer(resource);
+>         //消费线程
+>         Consumer c1 = new Consumer(resource);
+>  
+>         new Thread(p1).start();
+>  
+>         new Thread(c1).start();
+>     }
+> }
+> ```
+>
+> **方法二：lock, condition, await, signal**
+>
+> ```
+>  // 资源
+> public class Resource {
+>     //当前资源的数量
+>     private int num = 0;
+>     //当前资源的上限
+>     private int size = 10;
+>     private Lock lock = new ReentrantLock();//创建锁对象
+>     private Condition condition = lock.newCondition();//创建锁的条件，情况
+>  
+>     //消费资源
+>     public void remove() {
+>         try {
+>             lock.lock();//开启锁
+>             //如果num为0，没有资源了，需要等待
+>             while (num == 0) {//这里jdk源码里推荐用while，因为有可能出现虚假唤醒，所以要再次确认
+>                 try {
+>                     System.out.println("消费者进入等待");
+>                     condition.await();//线程等待，并释放锁
+>                 } catch (InterruptedException e) {
+>                     e.printStackTrace();
+>                 }
+>             }
+>             //如果线程可以执行到这里，说明资源里有资源可以消费
+>             num--;
+>             System.out.println("消费者线程为:" + Thread.currentThread().getName() + "--资源数量:" + num);
+>             condition.signal();//唤醒其他等待的线程
+>         } finally {
+>             lock.unlock();//释放锁
+>         }
+>  
+>     }
+>  
+>     //生产资源
+>     public  void put() {
+>         try {
+>             lock.lock();//开启锁
+>             //如果资源满了，就进入阻塞状态
+>             while (num == size) {//这里jdk源码里推荐用while，因为有可能出现虚假唤醒，所以要再次确认
+>                 try {
+>                     System.out.println("生产者进入等待");
+>                     condition.await();//线程等待，并释放锁
+>                 } catch (InterruptedException e) {
+>                     e.printStackTrace();
+>                 }
+>             }
+>             num++;//如果线程执行到这里，说明资源未满，可以开始生产
+>             System.out.println("生产者线程为:" + Thread.currentThread().getName() + "--资源数量:" + num);
+>             condition.signal();//唤醒其他等待的线程
+>         }finally {
+>             lock.unlock();//释放锁
+>         }
+>  
+>     }
+> }
+> ```
+>
+> ```
+> // 消费者
+> public class Consumer implements Runnable {
+>  
+>     private Resource resource;
+>  
+>     public Consumer(Resource resource) {
+>         this.resource = resource;
+>     }
+>  
+>     @Override
+>     public void run() {
+>         while (true){
+>             resource.remove();
+>         }
+>  
+>     }
+> }
+> ```
+>
+> ```
+> // 生产者
+> public class Producer implements Runnable {
+>  
+>     private Resource resource;
+>  
+>     public Producer(Resource resource){
+>         this.resource=resource;
+>     }
+>  
+>     @Override
+>     public void run() {
+>         while (true){
+>             resource.put();
+>         }
+>     }
+> }
+> ```
+>
+> ```
+> // 测试代码
+> public class TestConsumerAndProducer {
+>  
+>     public static void main(String[] args) {
+>         Resource resource = new Resource();
+>         //生产线程
+>         Producer p1 = new Producer(resource);
+>         //消费线程
+>         Consumer c1 = new Consumer(resource);
+>  
+>         new Thread(p1).start();
+>  
+>         new Thread(c1).start();
+>     }
+> }
+> ```
+>
+> **结果**
+>
+> ![](https://img-blog.csdn.net/20180911135448646?watermark/2/text/aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3UwMTA0NTIzODg=/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70)
 
 #### 53.用Java写代码来解决生产者——消费者问题。
 
