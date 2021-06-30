@@ -380,6 +380,8 @@
 
 > 从而实现有序性
 > 还有根据happens-before原则，每个volatile写操作先行发生与后续对这个变量的读操作。
+>
+> volatile关键字详解：https://www.cnblogs.com/dolphin0520/p/3920373.html
 
 #### 8. CAS？CAS 有什么缺陷，如何解决？ ####
 
@@ -1867,6 +1869,28 @@ Exception分为RuntimeException和非运行时异常。
 >  能，一个典型的例子是在类中有一个 long 类型的成员变量。如果你知道该成员变量会被多个线程访问，如计数器、价格等，你最好是将其设置为 volatile。为什么?因为 Java 中读取 long 类型变量不是原子的，需要分成两步，如果一个线程正在修改该 long 变量的值，另一个线程可能只能看到该值的一半(前 32 位)。但是对一个 volatile 型的 long 或 double 变量的读写是原子。 
 
 #### 62. 你是如何调用 wait（）方法的？使用 if 块还是循环？为什么？
+
+> wait() 方法应该在循环调用，因为当线程获取到 CPU 开始执行的时候，其他条
+>
+> 件可能还没有满足，所以在处理前，循环检测条件是否满足会更好。下面是一段
+>
+> 标准的使用 wait 和 notify 方法的代码：
+>
+> ```
+> // The standard idiom for using the wait method
+> 
+> synchronized (obj) {
+> 
+> while (condition does not hold)
+> 
+> obj.wait(); // (Releases lock, and reacquires on wakeup)
+> 
+> ... // Perform action appropriate to condition
+> 
+> }
+> ```
+>
+> 
 
 #### 63. 我们能创建一个包含可变对象的不可变对象吗？
 
