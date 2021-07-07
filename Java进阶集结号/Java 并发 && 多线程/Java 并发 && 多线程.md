@@ -1896,11 +1896,23 @@ Exception分为RuntimeException和非运行时异常。
 
 > 是的，我们是可以创建一个包含可变对象的不可变对象的，你只需要谨慎一点，不要共享可变对象的引用就可以了，如果需要变化时，就返回原对象的一个拷贝。最常见的例子就是对象中包含一个日期对象的引用
 
-在多线程环境下，SimpleDateFormat是线程安全的吗
+#### 64. 在多线程环境下，SimpleDateFormat是线程安全的吗
 
-为什么Java中 wait 方法需要在 synchronized 的方法中调用？
+> 不是，非常不幸，DateFormat 的所有实现，包括 SimpleDateFormat 都不是线程安全的，因此你不应该在多线程序中使用，除非是在对外线程安全的环境中使用，如 将 SimpleDateFormat 限制在 ThreadLocal 中。如果你不这么做，在解析或者格式化日期的时候，可能会获取到一个不正确的结果。因此，从日期、时间处理的所有实践来说，我强力推荐 joda-time 库。
+>
+>  ***\*1.需要的时候创建新实例：\**** 
+>
+> 
+>
+> 
 
-BlockingQueue，CountDownLatch及Semeaphore的使用场景
+#### 65. 为什么Java中 wait 方法需要在 synchronized 的方法中调用？
+
+> 
+
+#### 66. BlockingQueue，CountDownLatch及Semeaphore的使用场景
+
+> 
 
 #### 67. Java中interrupted 和 isInterruptedd方法的区别？
 
@@ -1950,22 +1962,123 @@ BlockingQueue，CountDownLatch及Semeaphore的使用场景
 
 #### 67. Java Monitor 的工作机理
 
+> 
+
 #### 68. 按线程池内部机制，当提交新任务时，有哪些异常要考虑。
 
 > 
 
 #### 69. 线程池都有哪几种工作队列？
 
-> 
+> 1. ArrayBlockingQueue是一个基于数组结构的有界阻塞队列，此队列按FIFO（先进先出）原则对元素进行排序。
+> 2. LinkedBlockingQueue一个基于链表结构的阻塞队列，此队列按FIFO（先进先出）排序元素，吞吐量通常要高于ArrayBlockingQueue。静态工厂方法Executors.newFixedThreadPool()使用了这个队列。
+> 3. SynchronousQueue一个不存储元素的阻塞队列。每个插入操作必须等到另一个线程调用移除操作，否则插入操作一直处于阻塞状态，吞吐量通常要高于LinkedBlockingQueue，静态工厂方法Executors.newCachedThreadPool()使用了这个队列。
+> 4. PriorityBlockingQueue一个具有优先级的无限阻塞队列。
 
 #### 70. 说说几种常见的线程池及使用场景?
 
+> - newFixedThreadPool (固定数目线程的线程池)
+>
+>   ```
+>   public static ExecutorService newFixedThreadPool(int nThreads, ThreadFactory threadFactory) {
+>           return new ThreadPoolExecutor(nThreads, nThreads,
+>                                        0L, TimeUnit.MILLISECONDS,
+>                                         new LinkedBlockingQueue<Runnable>(),
+>                                         threadFactory);
+>   }
+>   ```
+>
+>   线程池特点：
+>
+>   1. 核心线程数和最大线程数大小一样
+>   2. 没有所谓的非空闲时间，即keepAliveTime为0
+>   3. 阻塞队列为无界队列LinkedBlockingQueue
+>
+>   工作机制：
+>
+>   1. 提交任务
+>   2. 如果线程数少于核心线程，创建核心线程执行任务
+>   3. 如果线程数等于核心线程，把任务添加到LinkedBlockingQueue阻塞队列
+>   4. 如果线程执行完任务，去阻塞队列取任务，继续执行。
+>
+>   使用场景： FixedThreadPool 适用于处理CPU密集型的任务，确保CPU在长期被工作线程使用的情况下，尽可能的少的分配线程，即适用执行长期的任务 。
+>
+> - newCachedThreadPool(可缓存线程的线程池)
+>
+> ![1625668036307](C:\Users\Administrator.USER-20190223MK\AppData\Roaming\Typora\typora-user-images\1625668036307.png)
+>
+> 线程池特点：
+>
+> 1. 核心线程数为0
+> 2. 最大线程数为Integer.MAX_VALUE
+> 3. 阻塞队列是SynchronousQueue
+> 4. 非核心线程空闲存活时间为60秒
+>
+>  当提交任务的速度大于处理任务的速度时，每次提交一个任务，就必然会创建一个线程。极端情况下会创建过多的线程，耗尽 CPU 和内存资源。由于空闲 60 秒的线程会被终止，长时间保持空闲的 CachedThreadPool 不会占用任何资源。 
+>
+> 工作机制：
+>
+> 1. 提交任务
+> 2. 因为没有核心线程，所以任务直接加到SynchronousQueue队列。
+> 3. 判断是否有空闲线程，如果有，就去取出任务执行。
+> 4. 如果没有空闲线程，就新建一个线程执行。
+> 5. 执行完任务的线程，还可以存活60秒，如果在这期间，接到任务，可以继续活下去；否则，被销毁。
+>
 > 
+>
+> - newSingleThreadExecutor(单线程的线程池)
+>
+> ![1625668158371](C:\Users\Administrator.USER-20190223MK\AppData\Roaming\Typora\typora-user-images\1625668158371.png)
+>
+> 线程池特点：
+>
+> 1. 核心线程数为1
+> 2. 最大线程数也为1
+> 3. 阻塞队列是LinkedBlockingQueue
+> 4. keepAliveTime为0
+>
+> 工作机制：
+>
+> 1. 提交任务
+> 2. 线程池是否有一条线程在，如果没有，新建线程执行任务
+> 3. 如果有，将任务加到阻塞队列
+> 4. 当前的唯一线程，从队列取任务，执行完一个，再继续取，一个人（一条线程）夜以继日地干活。
+>
+> - newScheduledThreadPool(定时及周期执行的线程池)
+>
+> ![1625668227385](C:\Users\Administrator.USER-20190223MK\AppData\Roaming\Typora\typora-user-images\1625668227385.png)
+>
+> 线程池特点：
+>
+> 1. 最大线程数为Integer.MAX_VALUE
+> 2. 阻塞队列是DelayedWorkQueue
+> 3. keepAliveTime为0
+> 4. scheduleAtFixedRate() ：按某种速率周期执行
+> 5. scheduleWithFixedDelay()：在某个延迟后执行
+>
+> 工作机制：
+>
+> 1. 添加一个任务
+> 2. 线程池中的线程从 DelayQueue 中取任务
+> 3. 线程从 DelayQueue 中获取 time 大于等于当前时间的task
+> 4. 执行完后修改这个 task 的 time 为下次被执行的时间
+> 5. 这个 task 放回DelayQueue队列中
+>
+> 使用场景：周期性执行任务的场景，需要限制线程数量的场景
+>
+> 使用场景总结：
+>
+> - newFixedThreadPool : 适用于处理CPU密集型的任务，确保CPU在长期被工作线程使用的情况下，尽可能的少的分配线程，即适用执行长期的任务。
+> - newCachedThreadPool: 用于并发执行大量短期的小任务。
+> - newSingleThreadExecutor: 适用于串行执行任务的场景，一个任务一个任务地执行。
+> - newScheduledThreadPool ：周期性执行任务的场景，需要限制线程数量的场景;
 
 #### 71. 使用无界队列的线程池会导致内存飙升吗？
 
-> LinkedBlockingQueue默认的最大任务数量是Integer.MAX_VALUE, 非常大，可以理解为无限大；但是存在这种情况，当每个线程获取到一个任务后，执行时间比较长，导致workQueue里积压的任务越来越多，机器的内存使用不停的飙升，最后导致内存泄漏（OOM）。
+>  使用无界队列的线程池会导致内存飙升 ， newFixedThreadPool使用了无界的阻塞队列LinkedBlockingQueue，如果线程获取一个任务后，任务的执行时间比较长(比如，上面demo设置了10秒)，会导致队列的任务越积越多，导致机器内存使用不停飙升， 最终导致OOM， 所以建议不要直接通过Executors静态工厂构建线程池，而是通过ThreadPoolExecutor的方式，这样的处理方式让写的同学更加明确线程池的运行规则，规避资源耗尽的风险。 
 
-#### 80. 为什么阿里发布的 Java开发手册中强制线程池不允许使用 Executors 去创建？ ####
+#### 72. 为什么阿里发布的 Java开发手册中强制线程池不允许使用 Executors 去创建？ ####
 > 阿里巴巴的java手册里面说到，线程池的创建不要用JDK提供的那些简单方法，容易埋坑，要用ThreadPoolExecutor构造函数，来明确各个参数的意义，这样可以避免出错，代码可读性也很好。
-81. Future有缺陷嘛？
+#### 73. Future有缺陷嘛？
+
+> 有，Future接口调用get()方法取得处理结果值时是阻塞的；如果调用Future对象的get()方法时，如果这个线程还没执行完成，主线程main就一直阻塞到线程完成为止， 就算和它同时进行的其他线程已经执行完了，也要等待这个耗时线程执行完才能获得结果，大大影响运行效率。那么使用多线程就没有什么意义了。幸运的是JDK并发包也提供了CompletionService接口可以解决这个问题，它的take()方法哪个线程就先完成就先获取谁的Future对象。
