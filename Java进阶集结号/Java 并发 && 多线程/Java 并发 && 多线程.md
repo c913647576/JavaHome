@@ -1890,7 +1890,42 @@ Exception分为RuntimeException和非运行时异常。
 > }
 > ```
 >
-> 
+> wait()方法为什么要放在while循环里面(虚假唤醒 过早唤醒)
+>
+>  假如有两个线程，一个消费者线程，一个生产者线程。生产者线程的任务可以简化成将count加一，而后唤醒消费者；消费者则是将count减一，而后在减到0的时候陷入睡眠： 
+>
+> ![1626009656174](C:\Users\Administrator.USER-20190223MK\AppData\Roaming\Typora\typora-user-images\1626009656174.png)
+>
+> 这两个线程会交替执行,如果不加同步的话会出现什么问题呢?
+>
+> 假如消费者在判断count<=0之后,发生了上下文切换,生产者代码进行执行,数量加一,并且通知消费者,但是此时消费者还没有进入wait()方法,当消费者进入wait()之后,就会出现丢失通知的问题,明明我可以消费,且要阻塞在这里的问题.
+>
+> 正确的解决方法是,让生产者和消费者竞争同一把锁,让线程在同一时间节点,只有一个线程在运行,那么即使线程发生上下文切换,由于锁的原因,同一时间只有生产者或者消费者在执行,就可以解决这个丢失通知信息的问题了.
+>
+> 虚假(过早)唤醒
+>
+> 另外的一个疑问是为什么wait的竞态条件要使用死循环进行判断,普通的if判断难道不行么?观察下面代码:
+>
+> ![1626009706531](C:\Users\Administrator.USER-20190223MK\AppData\Roaming\Typora\typora-user-images\1626009706531.png)
+>
+> ![1626009723699](C:\Users\Administrator.USER-20190223MK\AppData\Roaming\Typora\typora-user-images\1626009723699.png)
+>
+> ![1626009741014](C:\Users\Administrator.USER-20190223MK\AppData\Roaming\Typora\typora-user-images\1626009741014.png)
+>
+> ![1626009756184](C:\Users\Administrator.USER-20190223MK\AppData\Roaming\Typora\typora-user-images\1626009756184.png)
+>
+>  执行结果: 
+>
+>  ![img](https://img-blog.csdnimg.cn/20200708172149734.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3RoZXRpbWVseXJhaW4=,size_16,color_FFFFFF,t_70) 
+>
+> 这个代码启动了四个线程,三个RemoveThread,一个AddThread,并且使用休眠的方式,让添加线程休眠600毫秒,删除线程休眠100毫秒,三个删除线程调用的remove方法,由于使用了synchronized修饰,所有每一次只有一个线程进行if判断,第一个线程肯定判断为true,走到wait方法,此时wait方法会释放锁,并且在此阻塞,那么第二个和第三个线程也会相继执行到同一程度.
+>
+> 600毫秒后,添加线程添加一个记录到list集合,并且通知所有的使用list锁住的线程,加入第一个线程先恢复,抢到了锁,它会正确删除集合,之后释放锁,第二个线程抢到之后由于直接remove集合元素,此时集合为空,必定报错.这就出现了过早唤醒的问题了.
+>
+> 解决办法就是讲竞态条件放在while循环里面,唤醒之后继续判断,此时便不会出现异常了.
+> 总结:
+>
+> wait,notify,notifyAll方法需要放在同步块里面使用,并且判断的竞态需要使用while循环进行判断,不能使用if.
 
 #### 63. 我们能创建一个包含可变对象的不可变对象吗？
 
@@ -1900,14 +1935,114 @@ Exception分为RuntimeException和非运行时异常。
 
 > 不是，非常不幸，DateFormat 的所有实现，包括 SimpleDateFormat 都不是线程安全的，因此你不应该在多线程序中使用，除非是在对外线程安全的环境中使用，如 将 SimpleDateFormat 限制在 ThreadLocal 中。如果你不这么做，在解析或者格式化日期的时候，可能会获取到一个不正确的结果。因此，从日期、时间处理的所有实践来说，我强力推荐 joda-time 库。
 >
->  ***\*1.需要的时候创建新实例：\**** 
+>  ***\*对\*\*SimpleDateFormat\*\* 进一步探索，得到这些知识:\**** 
 >
-> 
+> 想必大家对SimpleDateFormat并不陌生。SimpleDateFormat 是 Java 中一个非常常用的类，该类用来对日期字符串进行解析和格式化输出，但如果使用不小心会导致非常微妙和难以调试的问题，因为 DateFormat 和 SimpleDateFormat 类不都是线程安全的，在多线程环境下调用 format() 和 parse() 方法应该使用同步代码来避免问题。下面我们通过一个具体的场景来一步步的深入学习和理解SimpleDateFormat类。
+> 一.引子
+> 　　我们都是优秀的程序员，我们都知道在程序中我们应当尽量少的创建SimpleDateFormat 实例，因为创建这么一个实例需要耗费很大的代价。在一个读取数据库数据导出到excel文件的例子当中，每次处理一个时间信息的时候，就需要创建一个SimpleDateFormat实例对象，然后再丢弃这个对象。大量的对象就这样被创建出来，占用大量的内存和 jvm空间。代码如下：
+> ![1626008173641](C:\Users\Administrator.USER-20190223MK\AppData\Roaming\Typora\typora-user-images\1626008173641.png)
 >
-> 
+>  你也许会说，OK，那我就创建一个静态的simpleDateFormat实例，然后放到一个DateUtil类（如下）中，在使用时直接使用这个实例进行操作，这样问题就解决了。改进后的代码如下： 
+>
+> ![1626008217296](C:\Users\Administrator.USER-20190223MK\AppData\Roaming\Typora\typora-user-images\1626008217296.png)
+>
+> 当然，这个方法的确很不错，在大部分的时间里面都会工作得很好。但当你在生产环境中使用一段时间之后，你就会发现这么一个事实：它不是线程安全的。在正常的测试情况之下，都没有问题，但一旦在生产环境中一定负载情况下时，这个问题就出来了。他会出现各种不同的情况，比如转化的时间不正确，比如报错，比如线程被挂死等等。我们看下面的测试用例，那事实说话：
+>
+> ![1626008252564](C:\Users\Administrator.USER-20190223MK\AppData\Roaming\Typora\typora-user-images\1626008252564.png)
+>
+> ![1626008310028](C:\Users\Administrator.USER-20190223MK\AppData\Roaming\Typora\typora-user-images\1626008310028.png)
+>
+> ![1626008322111](C:\Users\Administrator.USER-20190223MK\AppData\Roaming\Typora\typora-user-images\1626008322111.png)
+>
+>  执行输出如下： 
+>
+> ![1626008354830](C:\Users\Administrator.USER-20190223MK\AppData\Roaming\Typora\typora-user-images\1626008354830.png)
+>
+> 说明：Thread-1和Thread-0报java.lang.NumberFormatException: multiple points错误，直接挂死，没起来；Thread-2 虽然没有挂死，但输出的时间是有错误的，比如我们输入的时间是：2013-05-24 06:02:20 ，当会输出：Mon May 24 06:02:20 CST 2021 这样的灵异事件。
+> 二.原因
+>
+> 　　作为一个专业程序员，我们当然都知道，相比于共享一个变量的开销要比每次创建一个新变量要小很多。上面的优化过的静态的SimpleDateFormat版，之所在并发情况下回出现各种灵异错误，是因为SimpleDateFormat和DateFormat类不是线程安全的。我们之所以忽视线程安全的问题，是因为从SimpleDateFormat和DateFormat类提供给我们的接口上来看，实在让人看不出它与线程安全有何相干。只是在JDK文档的最下面有如下说明：
+>
+> 　　SimpleDateFormat中的日期格式不是同步的。推荐（建议）为每个线程创建独立的格式实例。如果多个线程同时访问一个格式，则它必须保持外部同步。
+>
+> 　　JDK原始文档如下：
+> 　　Synchronization：
+> 　　Date formats are not synchronized. 
+> 　　It is recommended to create separate format instances for each thread. 
+> 　　If multiple threads access a format concurrently, it must be synchronized externally.
+>
+> 　　下面我们通过看JDK源码来看看为什么SimpleDateFormat和DateFormat类不是线程安全的真正原因：
+>
+> 　　SimpleDateFormat继承了DateFormat,在DateFormat中定义了一个protected属性的 Calendar类的对象：calendar。只是因为Calendar累的概念复杂，牵扯到时区与本地化等等，Jdk的实现中使用了成员变量来传递参数，这就造成在多线程的时候会出现错误。
+>
+> 　　在format方法里，有这样一段代码：
+> ![1626008419391](C:\Users\Administrator.USER-20190223MK\AppData\Roaming\Typora\typora-user-images\1626008419391.png)
+>
+> ![1626008437524](C:\Users\Administrator.USER-20190223MK\AppData\Roaming\Typora\typora-user-images\1626008437524.png)
+>
+> calendar.setTime(date)这条语句改变了calendar，稍后，calendar还会用到（在subFormat方法里），而这就是引发问题的根源。想象一下，在一个多线程环境下，有两个线程持有了同一个SimpleDateFormat的实例，分别调用format方法：
+> 　　线程1调用format方法，改变了calendar这个字段。
+> 　　中断来了。
+> 　　线程2开始执行，它也改变了calendar。
+> 　　又中断了。
+> 　　线程1回来了，此时，calendar已然不是它所设的值，而是走上了线程2设计的道路。如果多个线程同时争抢calendar对象，则会出现各种问题，时间不对，线程挂死等等。
+> 　　分析一下format的实现，我们不难发现，用到成员变量calendar，唯一的好处，就是在调用subFormat时，少了一个参数，却带来了这许多的问题。其实，只要在这里用一个局部变量，一路传递下去，所有问题都将迎刃而解。
+> 　　这个问题背后隐藏着一个更为重要的问题--无状态：无状态方法的好处之一，就是它在各种环境下，都可以安全的调用。衡量一个方法是否是有状态的，就看它是否改动了其它的东西，比如全局变量，比如实例的字段。format方法在运行过程中改动了SimpleDateFormat的calendar字段，所以，它是有状态的。
+>
+> 　　这也同时提醒我们在开发和设计系统的时候注意下一下三点:
+>
+> 　　1.自己写公用类的时候，要对多线程调用情况下的后果在注释里进行明确说明
+>
+> 　　2.对线程环境下，对每一个共享的可变变量都要注意其线程安全性
+>
+> 　　3.我们的类和方法在做设计的时候，要尽量设计成无状态的
+>
+> 　　三.解决办法
+>
+> 　　1.需要的时候创建新实例：
+> ![1626008485826](C:\Users\Administrator.USER-20190223MK\AppData\Roaming\Typora\typora-user-images\1626008485826.png)
+>
+> 说明：在需要用到SimpleDateFormat 的地方新建一个实例，不管什么时候，将有线程安全问题的对象由共享变为局部私有都能避免多线程问题，不过也加重了创建对象的负担。在一般情况下，这样其实对性能影响比不是很明显的。
+>
+> 　　2.使用同步：同步SimpleDateFormat对象
+> ![1626008644747](C:\Users\Administrator.USER-20190223MK\AppData\Roaming\Typora\typora-user-images\1626008644747.png)
+>
+> 说明：当线程较多时，当一个线程调用该方法时，其他想要调用此方法的线程就要block，多线程并发量大的时候会对性能有一定的影响。
+>
+> 　　3.使用ThreadLocal：
+>
+> ![1626008713147](C:\Users\Administrator.USER-20190223MK\AppData\Roaming\Typora\typora-user-images\1626008713147.png)
+>
+> }
+>
+> ![1626008748128](C:\Users\Administrator.USER-20190223MK\AppData\Roaming\Typora\typora-user-images\1626008748128.png)
+>
+> 说明：使用ThreadLocal, 也是将共享变量变为独享，线程独享肯定能比方法独享在并发环境中能减少不少创建对象的开销。如果对性能要求比较高的情况下，一般推荐使用这种方法。
+>
+> 　　4.抛弃JDK，使用其他类库中的时间格式化类：
+>
+> 　　1.使用Apache commons 里的FastDateFormat，宣称是既快又线程安全的SimpleDateFormat, 可惜它只能对日期进行format, 不能对日期串进行解析。
+>
+> 　　2.使用Joda-Time类库来处理时间相关问题
+> 做一个简单的压力测试，方法一最慢，方法三最快，但是就算是最慢的方法一性能也不差，一般系统方法一和方法二就可以满足，所以说在这个点很难成为你系统的瓶颈所在。从简单的角度来说，建议使用方法一或者方法二，如果在必要的时候，追求那么一点性能提升的话，可以考虑用方法三，用ThreadLocal做缓存。
+>    Joda-Time类库对时间处理方式比较完美，建议使用。
+>
+>    转载于博客:http://blog.csdn.net/zxh87/article/details/19414885
 
 #### 65. 为什么Java中 wait 方法需要在 synchronized 的方法中调用？
 
+> java在使用内置锁实现消费者-生产者模式的时候,可以使用wait,notify,notifyAll三个方法,而且这三个方法都是基类Object的方法,要调用某一个对象的同步方法时,必须将其放在sycronized修饰的方法、对象、代码块里面,你必须先持有对象上的锁,才能在某个条件下,修改其等待状态,下面给出了使用同步方法的标准代码模式:
+> ![1626009435379](C:\Users\Administrator.USER-20190223MK\AppData\Roaming\Typora\typora-user-images\1626009435379.png)
+>
+> 其中,Object.wait会自动释放锁,并请求操作系统挂起当前线程,从而使得其他线程能够获取这个锁并修改对象的状态.当被挂起的线程醒来时,它将在醒来之前重新获取锁.从直观上来理解,调用wait意味着"我要去休息了,但当发生特定的事情时唤醒我",而调用通知方法就意味着"特定的事情发生了".
+>
+> 如果不将代码放在同步方法里面的话,会抛出IllegalMonitorStateException异常:
+> ![1626009461361](C:\Users\Administrator.USER-20190223MK\AppData\Roaming\Typora\typora-user-images\1626009461361.png)
+>
+>  执行代码: 
+>
+>  ![img](https://img-blog.csdnimg.cn/2020070816555921.png) 
+>
 > 
 
 #### 66. BlockingQueue，CountDownLatch及Semeaphore的使用场景
@@ -1966,7 +2101,29 @@ Exception分为RuntimeException和非运行时异常。
 
 #### 68. 按线程池内部机制，当提交新任务时，有哪些异常要考虑。
 
-> 
+>  在使用线程池处理任务的时候，任务代码可能抛出RuntimeException 。
+>
+>  抛出异常后，线程池可能捕获它，也可能创建一个新的线程来代替异常的线程，我们可能无法感知任务出现了异常，因此我们需要考虑线程池异常情况。  具体的解决方案有如下几种: 
+>
+>  A. 在任务代码try/catch捕获异常 
+>
+> ![1626007254422](C:\Users\Administrator.USER-20190223MK\AppData\Roaming\Typora\typora-user-images\1626007254422.png)
+
+>  B. 通过Future对象的get方法接收抛出的异常 
+>
+> ![1626007379316](C:\Users\Administrator.USER-20190223MK\AppData\Roaming\Typora\typora-user-images\1626007379316.png)
+>
+>  C.为工作者线程设置UncaughtExceptionHandler，在uncaughtException方法中处理异常 
+>
+> ![1626007556968](C:\Users\Administrator.USER-20190223MK\AppData\Roaming\Typora\typora-user-images\1626007556968.png)
+>
+>  D. 重写ThreadPoolExecutor的afterExecute方法，处理传递的异常引用 
+>
+> ![1626007649064](C:\Users\Administrator.USER-20190223MK\AppData\Roaming\Typora\typora-user-images\1626007649064.png)
+>
+>  整理如下图： 
+>
+>  ![img](https://imgconvert.csdnimg.cn/aHR0cHM6Ly91c2VyLWdvbGQtY2RuLnhpdHUuaW8vMjAxOS83LzE0LzE2YmVjMzNjYTU1NTljOTM?x-oss-process=image/format,png) 
 
 #### 69. 线程池都有哪几种工作队列？
 
