@@ -48,14 +48,65 @@
 >
 >  注意实体类要实现Serializable 
 
-1. mybatis 是否支持延迟加载？延迟加载的原理是什么？
-2. mybatis 动态sql中使用<where>标签与直接写where关键字有什么区别？
-3. mybatis 动态sql标签中循环标签中有哪些属性，各自的作用。
-4. mybatis 和 hibernate 的区别有哪些？
-5. RowBounds是一次性查询全部结果吗？为什么？
-6. MyBatis 定义的接口，怎么找到实现的？
-7. Mybatis的底层实现原理。
-8. Mybatis是如何进行分页的？分页插件的原理是什么？
+4. mybatis 是否支持延迟加载？延迟加载的原理是什么？
+
+> MyBatis 实现一对一有几种方式?具体怎么操作的？
+> 有联合查询和嵌套查询
+> 联合查询是几个表联合查询,只查询一次, 通过在resultMap 里面配置 association 节点配置一对一的类就可以完成；
+> 嵌套查询是先查一个表，根据这个表里面的结果的 外键 id，去再另外一个表里面查询数据,也是通过 association 配置，但另外一个表的查询通过 select 属性配置。
+> <mapper namespace="com.lcb.mapping.userMapper">
+> <!--association 一对一关联查询 -->
+> <select id="getClass" parameterType="int"
+> resultMap="ClassesResultMap">
+> select * from class c,teacher t where c.teacher_id=t.t_id and
+> c.c_id=#{id}
+> </select>
+> <resultMap type="com.lcb.user.Classes" id="ClassesResultMap">
+> <!-- 实体类的字段名和数据表的字段名映射 -->
+> <id property="id" column="c_id"/>
+> <result property="name" column="c_name"/>
+> <association property="teacher"
+> javaType="com.lcb.user.Teacher">
+> <id property="id" column="t_id"/>
+> <result property="name" column="t_name"/>
+> </association>
+> </resultMap>MyBatis 实现一对多有几种方式,怎么操作的？
+> 有联合查询和嵌套查询。
+> 联合查询是几个表联合查询,只查询一次,通过在resultMap 里面的 collection 节点配置一对多的类就可以完成；
+> 嵌套查询是先查一个表,根据这个表里面的 结果的外键 id,再去另外一个表里面查询数据,也是通过配置 collection,但另外一个表的查询通过 select 节点配置
+> <!--collection 一对多关联查询 -->
+> <select id="getClass2" parameterType="int"
+> resultMap="ClassesResultMap2">
+> select * from class c,teacher t,student s where c.teacher_id=t.t_id
+> and c.c_id=s.class_id and c.c_id=#{id}
+> </select>
+> <resultMap type="com.lcb.user.Classes" id="ClassesResultMap2">
+> <id property="id" column="c_id"/>
+> <result property="name" column="c_name"/>
+> <association property="teacher"
+> javaType="com.lcb.user.Teacher">
+> <id property="id" column="t_id"/>
+> <result property="name" column="t_name"/>
+> </association>
+> <collection property="student"
+> ofType="com.lcb.user.Student">
+> <id property="id" column="s_id"/>
+> <result property="name" column="s_name"/>
+> </collection>
+> </resultMap>
+> </mapper>
+> Mybatis 是否支持延迟加载？如果支持，它的实现原理是什么？
+> Mybatis 仅支持 association 关联对象和 collection 关联集合对象的延迟加载，association 指的就是一对一，collection 指的就是一对多查询。在 Mybatis配置文件中，可以配置是否启用延迟加载 lazyLoadingEnabled=true|false。它的原理是，使用 CGLIB 创建目标对象的代理对象，当调用目标方法时，进入拦截器方法，比如调用 a.getB().getName()，拦截器 invoke()方法发现 a.getB()是null 值，那么就会单独发送事先保存好的查询关联 B 对象的 sql，把 B 查询上来，然后调用 a.setB(b)，于是 a 的对象 b 属性就有值了，接着完成 a.getB().getName()方法的调用。这就是延迟加载的基本原理。
+> 当然了，不光是 Mybatis，几乎所有的包括 Hibernate，支持延迟加载的原理都
+> 是一样的。
+
+1. mybatis 动态sql中使用<where>标签与直接写where关键字有什么区别？
+2. mybatis 动态sql标签中循环标签中有哪些属性，各自的作用。
+3. mybatis 和 hibernate 的区别有哪些？
+4. RowBounds是一次性查询全部结果吗？为什么？
+5. MyBatis 定义的接口，怎么找到实现的？
+6. Mybatis的底层实现原理。
+7. Mybatis是如何进行分页的？分页插件的原理是什么？
 
 > Mybatis 使用 RowBounds 对象进行分页，也可以直接编写 sql 实现分页，也可以使用Mybatis 的分页插件。
 > 分页插件的原理：实现 Mybatis 提供的接口，实现自定义插件，在插件的拦截方法内拦截待执行的 sql，然后重写 sql。
