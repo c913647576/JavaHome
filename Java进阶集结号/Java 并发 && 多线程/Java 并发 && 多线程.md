@@ -1,5 +1,6 @@
-### Java 并发 && 多线程
-#### 1. synchronized 的实现原理以及锁优化？ ####
+Java 并发 && 多线程
+
+1. synchronized 的实现原理以及锁优化？
 
 > 查看带有Synchronized语句块的class文件可以看到在同步代码块的起始位置插入了moniterenter指令，在同步代码块结束的位置插入了monitorexit指令。(JVM需要保证每一个monitorenter都有一个monitorexit与之相对应，但每个monitorexit不一定都有一个monitorenter)
 但是查看同步方法的class文件时，同步方法并没有通过指令monitorenter和monitorexit来完成，而被翻译成普通的方法调用和返回指令，只是在其常量池中多了ACC_SYNCHRONIZED标示符。JVM就是根据该标示符来实现方法的同步的：当方法调用时，调用指令将会检查方法的 ACC_SYNCHRONIZED 访问标志是否被设置，如果设置了，执行线程将先获取monitor，获取成功之后才能执行方法体，方法执行完后再释放monitor。在方法执行期间，其他任何线程都无法再获得同一个monitor对象。 其实本质上没有区别，只是方法的同步是一种隐式的方式来实现，无需通过字节码来完成。
@@ -204,7 +205,7 @@
 >    
 >     将多次连接在一起的加锁、解锁操作合并为一次，将多个连续的锁扩展成一个范围更大的锁。例如每次调用StringBuffer.append方法都需要加锁，如果虚拟机检测到有一系列的连续操作都是对同一个对象反复加锁和解锁，就会将其合并成一个更大范围的加锁和解锁操作。
 
-#### 2. ThreadLocal原理，使用注意点，应用场景有哪些？ ####
+2. ThreadLocal原理，使用注意点，应用场景有哪些？
 
 </span><span class="suffix" style="display: none;"></span></h3>
 <p data-tool="mdnice编辑器" style="padding-top: 8px; padding-bottom: 8px; line-height: 26px; color: #2b2b2b; margin: 10px 0px; letter-spacing: 2px; font-size: 14px; word-spacing: 2px;">回答四个主要点：</p>
@@ -284,8 +285,7 @@
 <ul data-tool="mdnice编辑器" style="margin-top: 8px; margin-bottom: 8px; padding-left: 25px; font-size: 15px; color: #595959; list-style-type: circle;">
 <li><section style="margin-top: 5px; margin-bottom: 5px; line-height: 26px; text-align: left; font-size: 14px; font-weight: normal; color: #595959;">数据库连接池</section></li><li><section style="margin-top: 5px; margin-bottom: 5px; line-height: 26px; text-align: left; font-size: 14px; font-weight: normal; color: #595959;">会话管理中使用</section></li></ul>
 <h3 data-tool="mdnice编辑器" style="padding: 0px; color: black; font-size: 17px; font-weight: bold; text-align: center; position: relative; margin-top: 20px; margin-bottom: 20px;"><span class="prefix" style="display: none;"></span><span class="content" style="border-bottom: 2px solid RGBA(79, 177, 249, .65); color: #2b2b2b; padding-bottom: 2px;"><span style="width: 30px; height: 30px; display: block; background-image: url(https://imgkr.cn-bj.ufileos.com/cdf294d0-6361-4af9-85e2-0913f0eb609b.png); background-position: center; background-size: 30px; margin: auto; opacity: 1; background-repeat: no-repeat; margin-bottom: -8px;"></span>
-
-#### 3. synchronized和ReentrantLock的区别？ ####
+3. synchronized和ReentrantLock的区别？
 
 </span><span class="suffix" style="display: none;"></span></h3>
 <p data-tool="mdnice编辑器" style="padding-top: 8px; padding-bottom: 8px; line-height: 26px; color: #2b2b2b; margin: 10px 0px; letter-spacing: 2px; font-size: 14px; word-spacing: 2px;">我记得校招的时候，这道面试题出现的频率还是挺高的~可以从锁的实现、功能特点、性能等几个维度去回答这个问题，</p>
@@ -296,8 +296,7 @@
 <li><section style="margin-top: 5px; margin-bottom: 5px; line-height: 26px; text-align: left; font-size: 14px; font-weight: normal; color: #595959;">ReentrantLock提供了一种能够中断等待锁的线程的机制，通过lock.lockInterruptibly()来实现这个机制。</section></li><li><section style="margin-top: 5px; margin-bottom: 5px; line-height: 26px; text-align: left; font-size: 14px; font-weight: normal; color: #595959;">ReentrantLock可以指定是公平锁还是非公平锁。而synchronized只能是非公平锁。所谓的公平锁就是先等待的线程先获得锁。</section></li><li><section style="margin-top: 5px; margin-bottom: 5px; line-height: 26px; text-align: left; font-size: 14px; font-weight: normal; color: #595959;">synchronized与wait()和notify()/notifyAll()方法结合实现等待/通知机制，ReentrantLock类借助Condition接口与newCondition()方法实现。</section></li><li><section style="margin-top: 5px; margin-bottom: 5px; line-height: 26px; text-align: left; font-size: 14px; font-weight: normal; color: #595959;">ReentrantLock需要手工声明来加锁和释放锁，一般跟finally配合释放锁。而synchronized不用手动释放锁。</section></li></ul>
 <span style="float: right; color: RGBA(64, 184, 250, .5);">❞</span></blockquote>
 <h3 data-tool="mdnice编辑器" style="padding: 0px; color: black; font-size: 17px; font-weight: bold; text-align: center; position: relative; margin-top: 20px; margin-bottom: 20px;"><span class="prefix" style="display: none;"></span><span class="content" style="border-bottom: 2px solid RGBA(79, 177, 249, .65); color: #2b2b2b; padding-bottom: 2px;"><span style="width: 30px; height: 30px; display: block; background-image: url(https://imgkr.cn-bj.ufileos.com/cdf294d0-6361-4af9-85e2-0913f0eb609b.png); background-position: center; background-size: 30px; margin: auto; opacity: 1; background-repeat: no-repeat; margin-bottom: -8px;"></span>
-
-#### 4. 说说CountDownLatch与CyclicBarrier 区别 ####
+4. 说说CountDownLatch与CyclicBarrier 区别
 
 </span><span class="suffix" style="display: none;"></span></h3>
 <ul data-tool="mdnice编辑器" style="margin-top: 8px; margin-bottom: 8px; padding-left: 25px; font-size: 15px; color: #595959; list-style-type: circle;">
@@ -309,8 +308,7 @@
 <li><section style="margin-top: 5px; margin-bottom: 5px; line-height: 26px; text-align: left; font-size: 14px; font-weight: normal; color: #595959;">CountDownLatch：假设老师跟同学约定周末在公园门口集合，等人齐了再发门票。那么，发门票（这个主线程），需要等各位同学都到齐（多个其他线程都完成），才能执行。</section></li><li><section style="margin-top: 5px; margin-bottom: 5px; line-height: 26px; text-align: left; font-size: 14px; font-weight: normal; color: #595959;">CyclicBarrier:多名短跑运动员要开始田径比赛，只有等所有运动员准备好，裁判才会鸣枪开始，这时候所有的运动员才会疾步如飞。</section></li></ul>
 <span style="float: right; color: RGBA(64, 184, 250, .5);">❞</span></blockquote>
 <h3 data-tool="mdnice编辑器" style="padding: 0px; color: black; font-size: 17px; font-weight: bold; text-align: center; position: relative; margin-top: 20px; margin-bottom: 20px;"><span class="prefix" style="display: none;"></span><span class="content" style="border-bottom: 2px solid RGBA(79, 177, 249, .65); color: #2b2b2b; padding-bottom: 2px;"><span style="width: 30px; height: 30px; display: block; background-image: url(https://imgkr.cn-bj.ufileos.com/cdf294d0-6361-4af9-85e2-0913f0eb609b.png); background-position: center; background-size: 30px; margin: auto; opacity: 1; background-repeat: no-repeat; margin-bottom: -8px;"></span>
-
-#### 5. Fork/Join框架的理解 ####
+5. Fork/Join框架的理解
 
 </span><span class="suffix" style="display: none;"></span></h3>
 <blockquote data-tool="mdnice编辑器" style="display: block; font-size: 0.9em; overflow: auto; overflow-scrolling: touch; padding-top: 10px; padding-bottom: 10px; padding-left: 20px; padding-right: 10px; margin-bottom: 20px; margin-top: 20px; text-size-adjust: 100%; line-height: 1.55em; font-weight: 400; border-radius: 6px; color: #595959; font-style: normal; text-align: left; box-sizing: inherit; border-left: none; border: 1px solid RGBA(64, 184, 250, .4); background: RGBA(64, 184, 250, .1);"><span style="color: RGBA(64, 184, 250, .5); font-size: 34px; line-height: 1; font-weight: 700;">❝</span>
@@ -325,8 +323,7 @@
 <figure data-tool="mdnice编辑器" style="margin: 0; margin-top: 10px; margin-bottom: 10px; display: flex; flex-direction: column; justify-content: center; align-items: center;"><img src="https://user-gold-cdn.xitu.io/2020/7/27/17390d4b199b668a?w=813&amp;h=576&amp;f=png&amp;s=65266" alt style="max-width: 100%; border-radius: 6px; display: block; margin: 20px auto; object-fit: contain; box-shadow: 2px 4px 7px #999;"></figure>
 <p data-tool="mdnice编辑器" style="padding-top: 8px; padding-bottom: 8px; line-height: 26px; color: #2b2b2b; margin: 10px 0px; letter-spacing: 2px; font-size: 14px; word-spacing: 2px;">工作盗窃算法就是，<strong style="color: #3594F7; font-weight: bold;"><span>「</span>某个线程从其他队列中窃取任务进行执行的过程<span>」</span></strong>。一般就是指做得快的线程（盗窃线程）抢慢的线程的任务来做，同时为了减少锁竞争，通常使用双端队列，即快线程和慢线程各在一端。</p>
 <h3 data-tool="mdnice编辑器" style="padding: 0px; color: black; font-size: 17px; font-weight: bold; text-align: center; position: relative; margin-top: 20px; margin-bottom: 20px;"><span class="prefix" style="display: none;"></span><span class="content" style="border-bottom: 2px solid RGBA(79, 177, 249, .65); color: #2b2b2b; padding-bottom: 2px;"><span style="width: 30px; height: 30px; display: block; background-image: url(https://imgkr.cn-bj.ufileos.com/cdf294d0-6361-4af9-85e2-0913f0eb609b.png); background-position: center; background-size: 30px; margin: auto; opacity: 1; background-repeat: no-repeat; margin-bottom: -8px;"></span>
-
-#### 6.  为什么我们调用start()方法时会执行run()方法，为什么我们不能直接调用run()方法？ ####
+6.  为什么我们调用start()方法时会执行run()方法，为什么我们不能直接调用run()方法？
 
 </span><span class="suffix" style="display: none;"></span></h3>
 <p data-tool="mdnice编辑器" style="padding-top: 8px; padding-bottom: 8px; line-height: 26px; color: #2b2b2b; margin: 10px 0px; letter-spacing: 2px; font-size: 14px; word-spacing: 2px;">看看Thread的start方法说明哈~</p>
@@ -381,7 +378,7 @@
 >
 > volatile关键字详解：https://www.cnblogs.com/dolphin0520/p/3920373.html
 
-#### 8. CAS？CAS 有什么缺陷，如何解决？ ####
+8. CAS？CAS 有什么缺陷，如何解决？
 
 </span><span class="suffix" style="display: none;"></span></h3>
 <p data-tool="mdnice编辑器" style="padding-top: 8px; padding-bottom: 8px; line-height: 26px; color: #2b2b2b; margin: 10px 0px; letter-spacing: 2px; font-size: 14px; word-spacing: 2px;">CAS,Compare and Swap，比较并交换；</p>
@@ -413,8 +410,7 @@
 <p data-tool="mdnice编辑器" style="padding-top: 8px; padding-bottom: 8px; line-height: 26px; color: #2b2b2b; margin: 10px 0px; letter-spacing: 2px; font-size: 14px; word-spacing: 2px;">有兴趣的朋友可以看看我之前的这篇实战文章哈~
 <span class="footnote-word" style="font-weight: normal; color: #595959;">CAS乐观锁解决并发问题的一次实践</span><sup class="footnote-ref" style="line-height: 0; font-weight: normal; color: #595959;">[2]</sup></p>
 <h3 data-tool="mdnice编辑器" style="padding: 0px; color: black; font-size: 17px; font-weight: bold; text-align: center; position: relative; margin-top: 20px; margin-bottom: 20px;"><span class="prefix" style="display: none;"></span><span class="content" style="border-bottom: 2px solid RGBA(79, 177, 249, .65); color: #2b2b2b; padding-bottom: 2px;"><span style="width: 30px; height: 30px; display: block; background-image: url(https://imgkr.cn-bj.ufileos.com/cdf294d0-6361-4af9-85e2-0913f0eb609b.png); background-position: center; background-size: 30px; margin: auto; opacity: 1; background-repeat: no-repeat; margin-bottom: -8px;"></span>
-
-#### 9. 如何检测死锁？怎么预防死锁？死锁四个必要条件 ####
+9. 如何检测死锁？怎么预防死锁？死锁四个必要条件
 
 </span><span class="suffix" style="display: none;"></span></h3>
 <p data-tool="mdnice编辑器" style="padding-top: 8px; padding-bottom: 8px; line-height: 26px; color: #2b2b2b; margin: 10px 0px; letter-spacing: 2px; font-size: 14px; word-spacing: 2px;">死锁是指多个线程因竞争资源而造成的一种互相等待的僵局。如图感受一下：
@@ -426,13 +422,15 @@
 <ul data-tool="mdnice编辑器" style="margin-top: 8px; margin-bottom: 8px; padding-left: 25px; font-size: 15px; color: #595959; list-style-type: circle;">
 <li><section style="margin-top: 5px; margin-bottom: 5px; line-height: 26px; text-align: left; font-size: 14px; font-weight: normal; color: #595959;">加锁顺序（线程按顺序办事）</section></li><li><section style="margin-top: 5px; margin-bottom: 5px; line-height: 26px; text-align: left; font-size: 14px; font-weight: normal; color: #595959;">加锁时限 （线程请求所加上权限，超时就放弃，同时释放自己占有的锁）</section></li><li><section style="margin-top: 5px; margin-bottom: 5px; line-height: 26px; text-align: left; font-size: 14px; font-weight: normal; color: #595959;">死锁检测</section></li></ul>
 
-#### 10. 如果线程过多,会怎样? ####
+10. 如果线程过多,会怎样?
+
 > 线程太多会占用内存，而且频繁的线程上下文切换也会导致程序运行效率降低。
-#### 11. 说说 Semaphore原理？ ####
+11. 说说 Semaphore原理？
 
 
 
-#### 12. AQS组件，实现原理 ####
+12. AQS组件，实现原理
+
 AQS，即AbstractQueuedSynchronizer，是构建锁或者其他同步组件的基础框架，它使用了一个int成员变量表示同步状态，通过内置的FIFO队列来完成资源获取线程的排队工作。可以回答以下这几个关键点哈：
 - state 状态的维护。
 - CLH队列
@@ -493,7 +491,7 @@ Semaphore，CountDownLatch，ReentrantLock
 
 可以看下之前我这篇文章哈，[AQS解析与实战](https://juejin.im/post/6844903903188746247)
 
-#### 13. 假设有T1、T2、T3三个线程，你怎样保证T2在T1执行完后执行，T3在T2执行完后执行？ ####
+13. 假设有T1、T2、T3三个线程，你怎样保证T2在T1执行完后执行，T3在T2执行完后执行？
 
 
 可以使用**join方法**解决这个问题。比如在线程A中，调用线程B的join方法表示的意思就是**：A等待B线程执行完毕后（释放CPU执行权），在继续执行。**
@@ -565,7 +563,7 @@ class SeasonThreadTask implements Runnable{
 秋天来了: 3次
 ```
 
-#### 14. LockSupport作用是？ ####
+14. LockSupport作用是？
 
 - LockSupport作用
 - park和unpark，与wait，notify的区别
@@ -669,7 +667,8 @@ LockSupport的park和unpark的实现，有点类似wait和notify的功能。但�
 Object blocker作用？
 > 方便在线程dump的时候看到具体的阻塞对象的信息。
 
-#### 15. Condition接口及其实现原理 ####
+15. Condition接口及其实现原理
+
 - Condition接口与Object监视器方法对比
 - Condition接口使用demo
 - Condition实现原理
@@ -743,13 +742,13 @@ ConditionI是跟Lock一起结合使用的，底层跟同步器（AQS）相关。
 > 调用Condition的signal()方法，将会唤醒在等待队列中等待时间最长的节点（首节点），在
 唤醒节点之前，会将节点移到同步队列中。
 
-#### 16. 说说并发与并行的区别? ####
+16. 说说并发与并行的区别?
 
 > 并发是指两个或以上的任务在同一时间段内同时执行，由于操作系统CPU时间分片功能，让我们看起来任务是在同时执行，但实际上还是串行执行；如果并发任务运行在多核CPU的硬件上，任务会有部分时间片段存在并行执行。
 > 
 > 并行是指两个或以上的任务在同一时刻同时执行。例如：两个线程同时运行在两个单核的CPU上，那么这两个线程就是并行执行的。
 
-#### 17. 为什么要用线程池？Java的线程池内部机制，参数作用，几种工作阻塞队列，线程池类型以及使用场景 ####
+17. 为什么要用线程池？Java的线程池内部机制，参数作用，几种工作阻塞队列，线程池类型以及使用场景
 
 回答这些点：
 - 为什么要用线程池？
@@ -831,7 +830,7 @@ public ThreadPoolExecutor(int corePoolSize, int maximumPoolSize,
 
 有兴趣可以看我这篇文章哈:[面试必备：Java线程池解析](https://juejin.im/post/6844903889678893063)
 
-#### 18. 如何保证多线程下 i++ 结果正确？ ####
+18. 如何保证多线程下 i++ 结果正确？
 
 </span><span class="suffix" style="display: none;"></span></h3>
 
@@ -883,7 +882,8 @@ public ThreadPoolExecutor(int corePoolSize, int maximumPoolSize,
 
 > 从写代码的角度来说，两者的复杂度是相同的，因为同步代码与线程数量是相互独立的。但是同步策略的选择依赖于线程的数量，因为越多的线程意味着更大的竞争，所以你需要利用同步技术，如锁分离，这要求更复杂的代码和专业知识。
 
-#### 20. 什么是多线程环境下的伪共享（false sharing）？ ####
+20. 什么是多线程环境下的伪共享（false sharing）？
+
 - 什么是伪共享
 - 如何解决伪共享问题
 
@@ -964,7 +964,7 @@ class Rectangle {
 ```
 可以发现利用填充数据的方式，让读写的变量分割到不同缓存行，可以很好挺高性能~
 
-#### 21. 线程池如何调优，最大数目如何确认？ ####
+21. 线程池如何调优，最大数目如何确认？
 
 在《Java Concurrency in Practice》一书中，有一个评估线程池线程大小的公式
 >  **Nthreads=Ncpu*Ucpu*(1+w/c)**
@@ -988,11 +988,11 @@ Nthreads=Ncpu*(1+w/c)
 参考了网上这篇文章，写得很棒，有兴趣的朋友可以去看一下哈：
 - [根据CPU核心数确定线程池并发线程数](https://www.cnblogs.com/dennyzhangdd/p/6909771.html)
 
-#### 22. Java 内存模型？ ####
+22. Java 内存模型？
 
 ![](https://p6-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/275f5b038d1d4e9ba308ab129df4aef3~tplv-k3u1fbpfcp-zoom-1.image)
 
-#### 23. 怎么实现所有线程在等待某个事件的发生才会去执行？ ####
+23. 怎么实现所有线程在等待某个事件的发生才会去执行？
 
 > 方案一：读写锁
 > 
@@ -1006,7 +1006,8 @@ Nthreads=Ncpu*(1+w/c)
 > 
 　　Semaphore初始值设为N，刚开始主线程先调用acquire(N)申请N个信号量，其它线程调用acquire()阻塞等待，等事件发生时同时主线程释放N个信号量；
 
-#### 24. 说一下 Runnable和 Callable有什么区别？ ####
+24. 说一下 Runnable和 Callable有什么区别？
+
 - Callable接口方法是call()，Runnable的方法是run()；
 - Callable接口call方法有返回值，支持泛型，Runnable接口run方法无返回值。
 - Callable接口call()方法允许抛出异常；而Runnable接口run()方法不能继续上抛异常；
@@ -1086,7 +1087,7 @@ public class CallableRunnableTest {
 null
 ```
 
-#### 25. 用Java编程一个会导致死锁的程序，你将怎么解决？ ####
+25. 用Java编程一个会导致死锁的程序，你将怎么解决？
 
 	public class DeadLock {
 	    public static final String LOCK_1 = "lock1";
@@ -1178,16 +1179,16 @@ null
     public static final String LOCK_2 = "lock";
 > 这是为什么呢？因为字符串有一个常量池，如果不同的线程持有的锁是具有相同字符的字符串锁时，那么两个锁实际上就是同一个锁。
 
-#### 26. 线程的生命周期，线程的几种状态。 ####
+26. 线程的生命周期，线程的几种状态。
 
 > 新建状态（new）；就绪状态（start）；运行状态（该线程会进入Running执行状态，并且开始调用run()方法中逻辑代码）；阻塞状态（wait）；销毁状态（destroy）；
 > ![](https://img2018.cnblogs.com/blog/1223046/201907/1223046-20190722214114154-276488899.png)
 
-#### 27. ReentrantLock实现原理 ####
+27. ReentrantLock实现原理
 
 
 
-#### 28. java并发包concurrent及常用的类 ####
+28. java并发包concurrent及常用的类
 
 > Condition.java;CountDownLatch.java;CyclicBarrier.java;Semaphore.java;ReentrantReadWriteLock.java;Callable.java;线程池：提供的线程池有几种：
 
@@ -1208,7 +1209,7 @@ ExecutorService service=Executors.newSingleThreadExecutor();
 > 	}
 >
 
-#### 29. wait(),notify()和suspend(),resume()之间的区别 ####
+29. wait(),notify()和suspend(),resume()之间的区别
 
 - > wait() 使得线程进入阻塞等待状态，并且释放锁
 - > notify()唤醒一个处于等待状态的线程，它一般跟wait（）方法配套使用。
@@ -1218,11 +1219,11 @@ ExecutorService service=Executors.newSingleThreadExecutor();
 > suspend()不建议使用,suspend()方法在调用后，线程不会释放已经占有的资 源（比如锁），而是占有着资源进入睡眠状态，这样容易引发死锁问题。
 >
 
-#### 30. FutureTask是什么？ ####
+30. FutureTask是什么？
 
 > FutureTask实现了RunnableFuture接口，RunnableFuture接口又实现了Runnable，Future接口。该类提供了Future的基本实现（Future表示异步计算的结果），并返回异步执行的计算结果。它提供了一些Future方法的实现，可以检查计算是否完成（isDone），get()方法获取计算结果，如果计算尚未完成则将方法阻塞（阻塞时间可以指定）。cancel()方法取消任务执行，提供了isCancelled()方法来确定任务是正常完成还是被取消。一旦计算完成，就不能取消计算。如果您想使用Future是为了取消任务而不需要提供返回的结果，则可以使生命返回值为Future类型，并由于基础任务而返回null。
 
-#### 31. 一个线程如果出现了运行时异常会怎么样 ####
+31. 一个线程如果出现了运行时异常会怎么样
 
 > Java中Throwable分为Exception和Error：
 出现Error的情况下，程序会停止运行。
@@ -1239,21 +1240,23 @@ Exception分为RuntimeException和非运行时异常。
 
 > Thread.UncaughtExceptionHandler是用于处理未捕获异常造成线程突然中断情况的一个内嵌接口。当一个未捕获异常将造成线程中断的时候JVM会使用Thread.getUncaughtExceptionHandler()来查询线程的UncaughtExceptionHandler，并将线程和异常作为参数传递给handler的uncaughtException()方法进行处理。
 
-#### 32. 生产者消费者模型的作用是什么 ####
+32. 生产者消费者模型的作用是什么
 
 > （1）通过平衡生产能力和消费能力来提升整个系统的运行效率。
 >
 > （2）解耦。生产者和消费者互相不受影响，可独立开发而不受对方制约。
 
-#### 33.ReadWriteLock是什么
+33.ReadWriteLock是什么
 
-#### 34.Java中用到的线程调度算法是什么？
+> 读写锁，见51题
+
+34.Java中用到的线程调度算法是什么？
 
 > java虚拟机使用抢占式线程调度模型。即当一个线程用完CPU之后，操作系统会根据线程优先级、线程饥饿情况的数据计算出一个总的线程优先级并分配下一个时间片给优先级高的线程。
 >
 > 操作系统中可能会出现某条线程常常获取到CPU控制权的情况，为了让某些优先级比较低的线程也能获取到CPU的控制权，可以使用Thread.sleep(0)手动触发一次操作系统分配时间片的操作，这也是平衡CPU控制权的一种操作。
 
-#### 35.线程池中的阻塞队列如果满了怎么办？
+35.线程池中的阻塞队列如果满了怎么办？
 
 > 线程池如果使用无界阻塞队列，在新的任务不断提交到线程池时，回事队列变得越来越大，此时会导致内存飙升进而出现OOM异常。解决办法是给线程池设置有界队列加一个拒绝策略。
 >
@@ -1261,7 +1264,7 @@ Exception分为RuntimeException和非运行时异常。
 >
 > 生产环境线程池队列满了又不能丢弃任务的解决方案：可以根据自己的业务需要，选择通过实现RejectedExecutionHandler接口来自定义拒绝策略。比如把线程池无法执行的任务信息持久化到数据库，后台专门起一个线程，后续等待线程池的工作负载降低了，这个后台线程就可以慢慢的从磁盘里读取之前持久化的任务重新提交到线程池。
 
-#### 36.线程池中 submit()和 execute()方法有什么区别？
+36.线程池中 submit()和 execute()方法有什么区别？
 
 > （1）execute()只能执行实现了Runnable接口的线程，submit()可以执行实现了Runnable接口或Callable接口的线程。
 >
@@ -1270,7 +1273,7 @@ Exception分为RuntimeException和非运行时异常。
 >
 > （3）submit()是ExecutorService接口中定义的方法，execute()是ThreadPoolExecutor中定义的方法；
 
-#### 37.介绍一下 AtomicInteger 类实现原子操作的原理？
+37.介绍一下 AtomicInteger 类实现原子操作的原理？
 
 > 我们先来看一下getAndIncrement的源代码：
 >
@@ -1301,7 +1304,7 @@ Exception分为RuntimeException和非运行时异常。
 > 调用Unsafe来实现
 > private static final Unsafe unsafe = Unsafe.getUnsafe();
 
-#### 37.多线程锁的升级原理是什么？
+37.多线程锁的升级原理是什么？
 
 > 锁的级别从低到高：
 >
@@ -1341,17 +1344,17 @@ Exception分为RuntimeException和非运行时异常。
 
 
 
-#### 38.指令重排序，内存栅栏等？
+38.指令重排序，内存栅栏等？
 
 > 见题7
 >
 
-#### 39.Java 内存模型 happens-before原则
+39.Java 内存模型 happens-before原则
 
 > jvm专题40题
 >
 
-#### 40.公平锁/非公平锁
+40.公平锁/非公平锁
 
 > 公平锁就是先进这个队列的线程，也先出队列获得资源执行任务，而非公平锁的话，则是线程还没有进队列之前可以与队列中的线程竞争尝试获得锁，如果获取失败，则进队列，此时也是要乖乖等前面出队才行。 
 >
@@ -1359,29 +1362,29 @@ Exception分为RuntimeException和非运行时异常。
 > 公平锁是在ReentrankLock中实现的，synchronized中实现的是非公平锁。
 >
 
-#### 41.可重入锁
+41.可重入锁
 
 >  可重入锁就是一个线程可重复获得同一把锁资源。主要是用途就是在递归方面，还有就是防止死锁，比如在一个同步方法块中调用了另一个相同锁对象的同步方法块 。
 >
 
-#### 42.独享锁、共享锁
+42.独享锁、共享锁
 
 共享锁可以由多个线程获取使用，而独享锁只能由一个线程获取。 对ReentrantReadWriteLock其读锁是共享锁，其写锁是独占锁 读锁的共享锁可保证并发读是非常高效的，读写，写读，写写的过程是互斥的。其中获得写锁的线程还能同时获得读锁，然后通过释放写锁来降级。读锁则不能升级 。**读写锁的升降级？**
 
-#### 43.偏向锁/轻量级锁/重量级锁
+43.偏向锁/轻量级锁/重量级锁
 
 见题37
 
-#### 44.如何保证内存可见性
+44.如何保证内存可见性
 
 > 见题7
 
-#### 45.非核心线程延迟死亡，如何实现？
+45.非核心线程延迟死亡，如何实现？
 
 >  通过阻塞队列poll()，让线程阻塞等待一段时间，如果没有取到任务，则线程死亡 
 >
 
-#### 46.ConcurrentHashMap读操作为什么不需要加锁？
+46.ConcurrentHashMap读操作为什么不需要加锁？
 
 >  在jdk1.7中是采用Segment + HashEntry + ReentrantLock的方式进行实现的，而1.8中放弃了Segment臃肿的设计，取而代之的是采用Node + CAS + Synchronized来保证并发安全进行实现。 
 >
@@ -1391,7 +1394,7 @@ Exception分为RuntimeException和非运行时异常。
 >
 > ![](https://img-blog.csdnimg.cn/20190802152603746.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2wxODg0ODk1NjczOQ==,size_16,color_FFFFFF,t_70)
 
-> ### get操作源码
+> **get操作源码**
 >
 > 1. 首先计算hash值，定位到该table索引位置，如果是首节点符合就返回
 > 2. 如果遇到扩容的时候，会调用标志正在扩容节点ForwardingNode的find方法，查找该节点，匹配就返回
@@ -1399,7 +1402,7 @@ Exception分为RuntimeException和非运行时异常。
 >
 >  get没有加锁的话，ConcurrentHashMap是如何保证读到的数据不是脏数据的呢？ 
 >
-> ### volatile登场
+> **volatile登场**
 >
 > 对于可见性，Java提供了volatile关键字来保证可见性、有序性。但不保证原子性。
 >
@@ -1421,7 +1424,7 @@ Exception分为RuntimeException和非运行时异常。
 >
 > 第三：由于线程1的工作内存中缓存变量的缓存行无效，所以线程1再次读取变量的值时会去主存读取。
 >
-> ### 是加在数组上的volatile吗?
+> **是加在数组上的volatile吗?**
 >
 > ```
 >   transient volatile Node<K,V>[] table;
@@ -1429,7 +1432,7 @@ Exception分为RuntimeException和非运行时异常。
 >
 >  我们知道volatile可以修饰数组的，只是意思和它表面上看起来的样子不同。举个栗子，volatile int array[10]是指array的地址是volatile的而不是数组元素的值是volatile的. 
 >
-> ### 用volatile修饰的Node
+> **用volatile修饰的Node**
 >
 >  get操作可以无锁是由于Node的元素val和指针next是用volatile修饰的，在多线程环境下线程A修改结点的val或者新增节点的时候是对线程B可见的。 
 >
@@ -1437,13 +1440,13 @@ Exception分为RuntimeException和非运行时异常。
 >
 >  其实就是为了使得Node数组在扩容的时候对其他线程具有可见性而加的volatile 
 >
-> ### 总结
+> **总结**
 >
 > - 在1.8中ConcurrentHashMap的get操作全程不需要加锁，这也是它比其他并发集合比如hashtable、用Collections.synchronizedMap()包装的hashmap;安全效率高的原因之一。
 > - get操作全程不需要加锁是因为Node的成员val是用volatile修饰的和数组用volatile修饰没有关系。
 > - 数组用volatile修饰主要是保证在数组扩容的时候保证可见性。
 
-#### 47.ThreadLocal 如何解决 Hash 冲突？
+47.ThreadLocal 如何解决 Hash 冲突？
 
 > 和HashMap的最大的不同在于，ThreadLocalMap结构非常简单，没有next引用，也就是说ThreadLocalMap中解决Hash冲突的方式并非链表的方式，而是采用**线性探测**的方式，所谓线性探测，就是根据初始key的hashcode值确定元素在table数组中的位置，如果发现这个位置上已经有其他key值的元素被占用，则利用固定的算法寻找一定步长的下个位置，依次判断，直至找到能够存放的位置。
 >  ThreadLocalMap解决Hash冲突的方式就是简单的步长加1或减1，寻找下一个相邻的位置。 
@@ -1452,13 +1455,13 @@ Exception分为RuntimeException和非运行时异常。
 >
 >  **所以这里引出的良好建议是：每个线程只存一个变量，这样的话所有的线程存放到map中的Key都是相同的ThreadLocal，如果一个线程要保存多个变量，就需要创建多个ThreadLocal，多个ThreadLocal放入Map中时会极大的增加Hash冲突的可能。** 
 
-#### 48.ThreadLocal 的内存泄露是怎么回事？
+48.ThreadLocal 的内存泄露是怎么回事？
 
 > ThreadLocal在ThreadLocalMap中是以一个弱引用身份被Entry中的Key引用的
 >
 > 由于Entry的key是弱引用，而Value是强引用。这就导致了一个问题，ThreadLocal在没有外部对象强引用时，发生GC时弱引用Key会被回收，而Value不会回收，如果创建ThreadLocal的线程一直持续运行，那么这个Entry对象中的value就有可能一直得不到回收，发生内存泄露。
 
-#### 49.为什么ThreadLocalMap 的 key是弱引用，设计理念是？
+49.为什么ThreadLocalMap 的 key是弱引用，设计理念是？
 
 > key 使用强引用：引用的ThreadLocal的对象被回收了，但是ThreadLocalMap还持有ThreadLocal的强引用，如果没有手动删除，ThreadLocal不会被回收，导致Entry内存泄漏。
 >
@@ -1483,7 +1486,7 @@ Exception分为RuntimeException和非运行时异常。
 > - 每个ThreadLocal只能保存一个变量副本，如果想要上线一个线程能够保存多个副本以上，就需要创建多个ThreadLocal。
 > - ThreadLocal内部的ThreadLocalMap键为弱引用，会有内存泄漏的风险。
 
-#### 50.同步方法和同步代码块的区别是什么？
+50.同步方法和同步代码块的区别是什么？
 
 > 同步方法默认用this或者当前类class对象作为锁；
 >
@@ -1491,7 +1494,7 @@ Exception分为RuntimeException和非运行时异常。
 >
 > 同步方法使用synchronized关键字修饰方法，而同步代码块主要修饰需要进行同步的代码块，用synchronized(object) {同步代码块}进行修饰；
 
-#### 51.在Java中Lock接口比synchronized块的优势是什么？如果你需要实现一个高效的缓存，它允许多个用户读，但只允许一个用户写，以此来保持它的完整性，你会怎样去实现它？
+51.在Java中Lock接口比synchronized块的优势是什么？如果你需要实现一个高效的缓存，它允许多个用户读，但只允许一个用户写，以此来保持它的完整性，你会怎样去实现它？
 
 > Lock和synchronized有一下几点不同：
 >
@@ -1574,7 +1577,7 @@ Exception分为RuntimeException和非运行时异常。
 > }
 > ```
 
-#### 52.用Java实现阻塞队列。
+52.用Java实现阻塞队列。
 
 > **方法一：synchronized, wait, notify**
 >
@@ -1799,18 +1802,19 @@ Exception分为RuntimeException和非运行时异常。
 >
 > ![](https://img-blog.csdn.net/20180911135448646?watermark/2/text/aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3UwMTA0NTIzODg=/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70)
 
-#### 53.用Java写代码来解决生产者——消费者问题。
+53.用Java写代码来解决生产者——消费者问题。
 
-#### 54.什么是竞争条件？你怎样发现和解决竞争？
+54.什么是竞争条件？你怎样发现和解决竞争？
 
 > 当两个或以上的线程对同一个数据进行操作的时候，可能会产生“竞争条件”的现象。
 >
 > 解决：如果在一个线程对数据进行操作的时候，禁止另外一个线程操作此数据，那么，就能很好的解决以上的问题了。这种操作叫做给线程枷锁。
 
-#### 55. 为什么我们调用start()方法时会执行run()方法，为什么我们不能直接调用run()方法？ ####
+55. 为什么我们调用start()方法时会执行run()方法，为什么我们不能直接调用run()方法？
+
 > 见题6；
 > 
-#### 56. Java中你怎样唤醒一个阻塞的线程？ ####
+56. Java中你怎样唤醒一个阻塞的线程？
 
 > 如果线程是因为调用了wait()、sleep()或者join()方法而导致的阻塞，可以中断线程，并且通过抛出InterruptedException来唤醒它；如果线程遇到了IO阻塞，无能为力，因为IO是操作系统实现的，Java代码并没有办法直接接触到操作系统。以下是详细的唤醒方法：
 >
@@ -1836,7 +1840,7 @@ Exception分为RuntimeException和非运行时异常。
 >
 > 以上是Java线程唤醒和阻塞的五种常用方法，不同的方法有不同的特点，其中wait() 和 notify()是其中功能最强大、使用最灵活的方法，但这也导致了它们效率较低、较容易出错的特性，因此，在实际应用中应灵活运用各种方法，以达到期望的目的与效果！
 
-#### 57. 什么是不可变对象，它对写并发应用有什么帮助？
+57. 什么是不可变对象，它对写并发应用有什么帮助？
 
 > 1、 不可变对象(Immutable Objects)即对象一旦被创建它的状态（对象的数据，也即对象属性值）就不能改变，反之即为可变对象(Mutable Objects)。
 >
@@ -1853,19 +1857,19 @@ Exception分为RuntimeException和非运行时异常。
 >
 > final修饰一个类时，表明这个类时不可变类，也不能被继承，final类中所有的成员方法都会被隐式的指定为final方法，final方法不可被重写；当final修饰一个基本数据类型时，表示该基本数据类型的值一旦被初始化便不能发生变化。如果final修饰一个引用类型时，则对其初始化后便不能再指向其他对象了，但该引用指向的对象内容可以发生变化。本质上final要求值/引用地址值不能发生变化。
 
-#### 58. 你在多线程环境中遇到的共同的问题是什么？你是怎么解决它的？
+58. 你在多线程环境中遇到的共同的问题是什么？你是怎么解决它的？
 
 >  多线程和并发程序中常遇到的有Memory-interface、竞争条件、死锁、活锁和饥饿。问题是没有止境的，如果你弄错了，将很难发现和调试。 
 
-#### 59. Java 中能创建 volatile数组吗
+59. Java 中能创建 volatile数组吗
 
 > volatile是可以修饰数组的，所以java中可以创建volatile数组；例如 volatile int array[10]是指array的地址是volatile的，而不是数组元素的值是volatile的。
 
-#### 61. volatile 能使得一个非原子操作变成原子操作吗
+61. volatile 能使得一个非原子操作变成原子操作吗
 
 >  能，一个典型的例子是在类中有一个 long 类型的成员变量。如果你知道该成员变量会被多个线程访问，如计数器、价格等，你最好是将其设置为 volatile。为什么?因为 Java 中读取 long 类型变量不是原子的，需要分成两步，如果一个线程正在修改该 long 变量的值，另一个线程可能只能看到该值的一半(前 32 位)。但是对一个 volatile 型的 long 或 double 变量的读写是原子。 
 
-#### 62. 你是如何调用 wait（）方法的？使用 if 块还是循环？为什么？
+62. 你是如何调用 wait（）方法的？使用 if 块还是循环？为什么？
 
 > wait() 方法应该在循环调用，因为当线程获取到 CPU 开始执行的时候，其他条
 >
@@ -1924,11 +1928,11 @@ Exception分为RuntimeException和非运行时异常。
 >
 > wait,notify,notifyAll方法需要放在同步块里面使用,并且判断的竞态需要使用while循环进行判断,不能使用if.
 
-#### 63. 我们能创建一个包含可变对象的不可变对象吗？
+63. 我们能创建一个包含可变对象的不可变对象吗？
 
 > 是的，我们是可以创建一个包含可变对象的不可变对象的，你只需要谨慎一点，不要共享可变对象的引用就可以了，如果需要变化时，就返回原对象的一个拷贝。最常见的例子就是对象中包含一个日期对象的引用
 
-#### 64. 在多线程环境下，SimpleDateFormat是线程安全的吗
+64. 在多线程环境下，SimpleDateFormat是线程安全的吗
 
 > 不是，非常不幸，DateFormat 的所有实现，包括 SimpleDateFormat 都不是线程安全的，因此你不应该在多线程序中使用，除非是在对外线程安全的环境中使用，如 将 SimpleDateFormat 限制在 ThreadLocal 中。如果你不这么做，在解析或者格式化日期的时候，可能会获取到一个不正确的结果。因此，从日期、时间处理的所有实践来说，我强力推荐 joda-time 库。
 >
@@ -2026,7 +2030,7 @@ Exception分为RuntimeException和非运行时异常。
 >
 >    转载于博客:http://blog.csdn.net/zxh87/article/details/19414885
 
-#### 65. 为什么Java中 wait 方法需要在 synchronized 的方法中调用？
+65. 为什么Java中 wait 方法需要在 synchronized 的方法中调用？
 
 > java在使用内置锁实现消费者-生产者模式的时候,可以使用wait,notify,notifyAll三个方法,而且这三个方法都是基类Object的方法,要调用某一个对象的同步方法时,必须将其放在sycronized修饰的方法、对象、代码块里面,你必须先持有对象上的锁,才能在某个条件下,修改其等待状态,下面给出了使用同步方法的标准代码模式:
 > ![1626009435379](C:\Users\Administrator.USER-20190223MK\AppData\Roaming\Typora\typora-user-images\1626009435379.png)
@@ -2042,21 +2046,21 @@ Exception分为RuntimeException和非运行时异常。
 >
 > 
 
-#### 66. BlockingQueue，CountDownLatch及Semeaphore的使用场景
+66. BlockingQueue，CountDownLatch及Semeaphore的使用场景
 
 > 
 
-#### 67. Java中interrupted 和 isInterruptedd方法的区别？
+67. Java中interrupted 和 isInterruptedd方法的区别？
 
 > interrupted和isInterrupted的主要区别是前者会将中断状态清除而后者不会。java多线程的中断机制是用内部标识来实现的，调用Thread.interrupt()来中断一个线程就会设置中断标识为true。当中断线程调用静态方法Thread.interrupted()来检查中断状态时，中断状态会被清零。
 >
 > 非静态方法isInterrupted()用来查询其他线程的中断状态且不会改变中断中状态标识。简单的说就是任何抛出InterruptedException异常的方法都会将中断状态清零。无论如何，一个线程的中断状态都有可能被其它线程调用中断来改变。
 
-#### 68. 怎么检测一个线程是否持有对象监视器
+68. 怎么检测一个线程是否持有对象监视器
 
 > Thread类提供了一个holdsLock(Object obj)方法，当且仅当对象obj的监视器被某个线程持有的时候才会返回true，注意这是一个static方法，这意味着“某个线程”指的是当前线程。
 
-#### 69. 什么情况会导致线程阻塞
+69. 什么情况会导致线程阻塞
 
 >  在某一时刻某一个线程在运行一段代码的时候，这时候另一个线程也需要运行，但是在运行过程中的那个线程执行完成之前，另一个线程是无法获取到CPU执行权的（调用sleep方法是进入到睡眠暂停状态，但是CPU执行权并没有交出去，而调用wait方法则是将CPU执行权交给另一个线程），这个时候就会造成线程阻塞。 
 >
@@ -2070,15 +2074,15 @@ Exception分为RuntimeException和非运行时异常。
 >
 > 5.suspend() 和 resume() ：这两个方法是配套使用的，suspend() 是让线程进入阻塞状态，它的解药就是resume()，没有resume()它自己是不会恢复的，由于这种比较容易出现死锁现象，所以jdk1.5之后就已经被废除了，这对就是相爱相杀的一对。
 
-#### 64.如何在两个线程间共享数据
+64.如何在两个线程间共享数据
 
 > 通过在线程之间共享对象就可以了，然后通过wait/notify/notifyAll、await/signal/signalAll进行唤醒和等待，比方说阻塞队列BlockingQueue就是为等待线程之间共享数据而设计的。
 
-#### 64.Thread.sleep(1000)的作用是什么？
+64.Thread.sleep(1000)的作用是什么？
 
 > 线程睡眠1秒钟
 
-#### 65.使用多线程可能带来什么问题
+65.使用多线程可能带来什么问题
 
 > 线程安全问题
 >
@@ -2088,15 +2092,15 @@ Exception分为RuntimeException和非运行时异常。
 >
 > 死锁
 
-#### 66. 什么是上下文切换
+66. 什么是上下文切换
 
 > 多线程的上下文切换是指CPU控制权由一个已经正在运行的线程切换到另外一个就绪并等待获取CPU执行权的线程的过程。
 
-#### 67. Java Monitor 的工作机理
+67. Java Monitor 的工作机理
 
 > 
 
-#### 68. 按线程池内部机制，当提交新任务时，有哪些异常要考虑。
+68. 按线程池内部机制，当提交新任务时，有哪些异常要考虑。
 
 >  在使用线程池处理任务的时候，任务代码可能抛出RuntimeException 。
 >
@@ -2122,14 +2126,14 @@ Exception分为RuntimeException和非运行时异常。
 >
 >  ![img](https://imgconvert.csdnimg.cn/aHR0cHM6Ly91c2VyLWdvbGQtY2RuLnhpdHUuaW8vMjAxOS83LzE0LzE2YmVjMzNjYTU1NTljOTM?x-oss-process=image/format,png) 
 
-#### 69. 线程池都有哪几种工作队列？
+69. 线程池都有哪几种工作队列？
 
 > 1. ArrayBlockingQueue是一个基于数组结构的有界阻塞队列，此队列按FIFO（先进先出）原则对元素进行排序。
 > 2. LinkedBlockingQueue一个基于链表结构的阻塞队列，此队列按FIFO（先进先出）排序元素，吞吐量通常要高于ArrayBlockingQueue。静态工厂方法Executors.newFixedThreadPool()使用了这个队列。
 > 3. SynchronousQueue一个不存储元素的阻塞队列。每个插入操作必须等到另一个线程调用移除操作，否则插入操作一直处于阻塞状态，吞吐量通常要高于LinkedBlockingQueue，静态工厂方法Executors.newCachedThreadPool()使用了这个队列。
 > 4. PriorityBlockingQueue一个具有优先级的无限阻塞队列。
 
-#### 70. 说说几种常见的线程池及使用场景?
+70. 说说几种常见的线程池及使用场景?
 
 > - newFixedThreadPool (固定数目线程的线程池)
 >
@@ -2227,12 +2231,13 @@ Exception分为RuntimeException和非运行时异常。
 > - newSingleThreadExecutor: 适用于串行执行任务的场景，一个任务一个任务地执行。
 > - newScheduledThreadPool ：周期性执行任务的场景，需要限制线程数量的场景;
 
-#### 71. 使用无界队列的线程池会导致内存飙升吗？
+71. 使用无界队列的线程池会导致内存飙升吗？
 
 >  使用无界队列的线程池会导致内存飙升 ， newFixedThreadPool使用了无界的阻塞队列LinkedBlockingQueue，如果线程获取一个任务后，任务的执行时间比较长(比如，上面demo设置了10秒)，会导致队列的任务越积越多，导致机器内存使用不停飙升， 最终导致OOM， 所以建议不要直接通过Executors静态工厂构建线程池，而是通过ThreadPoolExecutor的方式，这样的处理方式让写的同学更加明确线程池的运行规则，规避资源耗尽的风险。 
 
-#### 72. 为什么阿里发布的 Java开发手册中强制线程池不允许使用 Executors 去创建？ ####
+72. 为什么阿里发布的 Java开发手册中强制线程池不允许使用 Executors 去创建？
+
 > 阿里巴巴的java手册里面说到，线程池的创建不要用JDK提供的那些简单方法，容易埋坑，要用ThreadPoolExecutor构造函数，来明确各个参数的意义，这样可以避免出错，代码可读性也很好。
-#### 73. Future有缺陷嘛？
+73. Future有缺陷嘛？
 
 > 有，Future接口调用get()方法取得处理结果值时是阻塞的；如果调用Future对象的get()方法时，如果这个线程还没执行完成，主线程main就一直阻塞到线程完成为止， 就算和它同时进行的其他线程已经执行完了，也要等待这个耗时线程执行完才能获得结果，大大影响运行效率。那么使用多线程就没有什么意义了。幸运的是JDK并发包也提供了CompletionService接口可以解决这个问题，它的take()方法哪个线程就先完成就先获取谁的Future对象。
