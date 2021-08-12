@@ -1000,7 +1000,7 @@ Nthreads=Ncpu*(1+w/c)
 
 > 方案二：CountDownLatch
 > 
-　　CountDownLatch初始值设为1，所有子线程调用await方法等待，等事件发生时调用countDown方法计数减为0；
+　　CountDownLatch初始值设为1，主线程线程调用await方法等待，子线程调用countDown方法计数减为0，达到CountDownLatch时触发事件；
 
 > 方案三：Semaphore
 > 
@@ -1109,7 +1109,7 @@ null
 	                e.printStackTrace();
 	            }
 	        });
-	
+	    
 	        Thread threadB = new Thread(() -> {
 	            try {
 	                while (true) {
@@ -1125,7 +1125,7 @@ null
 	                e.printStackTrace();
 	            }
 	        });
-	
+	    
 	        threadA.start();
 	        threadB.start();
 	    }
